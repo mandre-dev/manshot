@@ -10,13 +10,13 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     # --- SendGrid (Email) ---
     SENDGRID_API_KEY: str = ""
-    EMAIL_FROM: str = ""        # ex: seuemail@gmail.com
+    EMAIL_FROM: str = ""
     EMAIL_FROM_NAME: str = "Manshot"
 
-    # --- Twilio (SMS) ---
-    TWILIO_ACCOUNT_SID: str = ""
-    TWILIO_AUTH_TOKEN: str = ""
-    TWILIO_PHONE_FROM: str = ""  # ex: +5521999999999
+    # --- Vonage (SMS) ---
+    VONAGE_API_KEY: str = ""
+    VONAGE_API_SECRET: str = ""
+    VONAGE_PHONE_FROM: str = "Manshot"
 
     # --- Telegram ---
     TELEGRAM_BOT_TOKEN: str = ""
