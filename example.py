@@ -24,13 +24,14 @@ print(email.summary(results))
 
 # --- Disparo via SMS ---
 # (ajuste os destinations para números de telefone)
-# sms_contacts = [Contact(name="Mandré", destination="+5521999999999")]
-# print("\n=== Disparando SMS ===")
-# sms = SMSChannel()
-# results = sms.send_bulk(sms_contacts, message)
-# print(sms.summary(results))
-
-# --- Disparo via Telegram ---
+sms_contacts = [Contact(name="Mandré", destination="+5522999684098")]
+print("\n=== Disparando SMS ===")
+sms = SMSChannel()
+results = sms.send_bulk(sms_contacts, message)
+for r in results:
+    if not r.success:
+        print(f"Erro: {r.error}")
+print(sms.summary(results))# --- Disparo via Telegram ---
 # (ajuste os destinations para chat_ids do Telegram)
 tg_contacts = [Contact(name="Mandré", destination="1628215092")]
 print("\n=== Disparando Telegram ===")
