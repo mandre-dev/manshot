@@ -8,9 +8,9 @@ from core import EmailChannel, SMSChannel, TelegramChannel, Contact
 
 # --- Lista de contatos de exemplo ---
 contacts = [
-    Contact(name="Mandré",  destination="seuemail@gmail.com"),
-    Contact(name="João",    destination="joao@email.com"),
-    Contact(name="Maria",   destination="maria@email.com"),
+    Contact(name="Mandré",  destination="marcosandredev25@gmail.com"),
+    Contact(name="João",    destination="marcosandredev25@email.com"),
+    Contact(name="Maria",   destination="marcosandredev25@email.com"),
 ]
 
 # --- Mensagem com personalização ---
@@ -32,8 +32,8 @@ print(email.summary(results))
 
 # --- Disparo via Telegram ---
 # (ajuste os destinations para chat_ids do Telegram)
-# tg_contacts = [Contact(name="Mandré", destination="123456789")]
-# print("\n=== Disparando Telegram ===")
-# tg = TelegramChannel()
-# results = tg.send_bulk(tg_contacts, message)
-# print(tg.summary(results))
+tg_contacts = [Contact(name="Mandré", destination="1628215092")]
+print("\n=== Disparando Telegram ===")
+tg = TelegramChannel()
+results = tg.send_bulk(tg_contacts, message)
+print(tg.summary(results))
