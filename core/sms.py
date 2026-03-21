@@ -1,11 +1,10 @@
 """
 sms.py — Manshot
-Canal de disparo via SMS usando Twilio.
-Trial gratuito inclui crédito para testes.
+Canal de disparo via SMS usando Vonage.
+Trial gratuito funciona com números brasileiros.
 """
 
-from twilio.rest import Client
-from twilio.base.exceptions import TwilioRestException
+import vonage
 
 from .base import BaseChannel, Contact, DispatchResult
 from .config import settings
@@ -13,35 +12,36 @@ from .config import settings
 
 class SMSChannel(BaseChannel):
     """
-    Disparo de SMS em massa via Twilio.
-    No trial gratuito, só envia para números verificados na conta.
+    Disparo de SMS em massa via Vonage.
     """
 
     def __init__(self):
-        self.client = Client(
-            settings.TWILIO_ACCOUNT_SID,
-            settings.TWILIO_AUTH_TOKEN
+        self.client = vonage.Client(
+            key=settings.VONAGE_API_KEY,
+            secret=settings.VONAGE_API_SECRET
         )
+        self.sms = vonage.Sms(self.client)
 
     def send(self, contact: Contact, message: str) -> DispatchResult:
         """
         Envia SMS para um contato.
-        O número deve estar no formato internacional: +5521999999999
+        O número deve estar no formato internacional: 5521999999999
         A mensagem suporta variáveis: use {name} para personalizar.
         """
         try:
             personalized_message = message.format(name=contact.name)
 
-            self.client.messages.create(
-                body=personalized_message,
-                from_=settings.TWILIO_PHONE_FROM,
-                to=contact.destination
-            )
+            response = self.sms.send_message({
+                "from": settings.VONAGE_PHONE_FROM,
+                "to": contact.destination,
+                "text": personalized_message
+            })
 
-            return DispatchResult(contact=contact, success=True)
+            status = response["messages"][0]["status"]
+            success = status == "0"
+            error = response["messages"][0].get("error-text", "") if not success else ""
 
-        except TwilioRestException as e:
-            return DispatchResult(contact=contact, success=False, error=str(e))
+            return DispatchResult(contact=contact, success=success, error=error)
 
         except Exception as e:
             return DispatchResult(contact=contact, success=False, error=str(e))
