@@ -1,11 +1,11 @@
-// Campaigns.jsx — Manshot Cyber Tech
+// Campaigns.jsx — Manshot Orange Theme
 
 import { useEffect, useState } from 'react'
 import { getCampaigns, createCampaign, sendCampaign } from '../services/api'
 
 const inputStyle = {
-  background: '#1a2234',
-  border: '1px solid #1e2d4a',
+  background: '#1a1208',
+  border: '1px solid #2a1a0a',
   borderRadius: '8px',
   padding: '10px 14px',
   color: '#e5e7eb',
@@ -17,7 +17,7 @@ const inputStyle = {
 const StatusPill = ({ status }) => {
   const colors = {
     done:    { bg: '#064e3b', color: '#10b981' },
-    running: { bg: '#1e3a5f', color: '#60a5fa' },
+    running: { bg: '#2a1a0a', color: '#FF8C00' },
     failed:  { bg: '#4c1d24', color: '#f87171' },
     pending: { bg: '#1f2937', color: '#9ca3af' },
   }
@@ -37,8 +37,8 @@ const CheckBox = ({ label, checked, onChange }) => (
       onClick={onChange}
       style={{
         width: '18px', height: '18px', borderRadius: '4px',
-        background: checked ? '#4361EE' : 'transparent',
-        border: `1px solid ${checked ? '#4361EE' : '#1e2d4a'}`,
+        background: checked ? '#FF6B00' : 'transparent',
+        border: `1px solid ${checked ? '#FF6B00' : '#2a1a0a'}`,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontSize: '11px', color: '#fff', cursor: 'pointer',
         transition: 'all 0.2s',
@@ -105,8 +105,8 @@ export default function Campaigns() {
       </div>
 
       {/* Formulário */}
-      <div style={{ background: '#111827', border: '1px solid #1e2d4a', borderRadius: '10px', padding: '20px', marginBottom: '20px' }}>
-        <div style={{ color: '#4361EE', fontSize: '12px', fontWeight: '600', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+      <div style={{ background: '#111827', border: '1px solid #2a1a0a', borderRadius: '10px', padding: '20px', marginBottom: '20px' }}>
+        <div style={{ color: '#FF6B00', fontSize: '12px', fontWeight: '600', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
           + Nova campanha
         </div>
         <form onSubmit={handleCreate}>
@@ -129,7 +129,7 @@ export default function Campaigns() {
           </div>
 
           <button type="submit" style={{
-            background: '#4361EE', color: '#fff', border: 'none',
+            background: '#FF6B00', color: '#fff', border: 'none',
             borderRadius: '8px', padding: '10px 20px', fontSize: '13px',
             fontWeight: '600', cursor: 'pointer', width: '100%',
           }}>
@@ -139,31 +139,31 @@ export default function Campaigns() {
       </div>
 
       {/* Tabela */}
-      <div style={{ background: '#111827', border: '1px solid #1e2d4a', borderRadius: '10px', overflow: 'hidden' }}>
-        <div style={{ padding: '16px', borderBottom: '1px solid #1e2d4a' }}>
+      <div style={{ background: '#111827', border: '1px solid #2a1a0a', borderRadius: '10px', overflow: 'hidden' }}>
+        <div style={{ padding: '16px', borderBottom: '1px solid #2a1a0a' }}>
           <span style={{ color: '#fff', fontSize: '14px', fontWeight: '600' }}>Campanhas</span>
           <span style={{ color: '#6b7280', fontSize: '12px', marginLeft: '8px' }}>({campaigns.length} total)</span>
         </div>
 
-        <div style={{ display: 'flex', padding: '10px 16px', borderBottom: '1px solid #1e2d4a' }}>
+        <div style={{ display: 'flex', padding: '10px 16px', borderBottom: '1px solid #2a1a0a' }}>
           {['Campanha', 'Canais', 'Status', 'Total', 'Sucesso', 'Ação'].map(h => (
             <div key={h} style={{ flex: 1, color: '#4b5563', fontSize: '11px', fontWeight: '500', textTransform: 'uppercase' }}>{h}</div>
           ))}
         </div>
 
         {loading ? (
-          <div style={{ padding: '24px', textAlign: 'center', color: '#4361EE' }}>Carregando...</div>
+          <div style={{ padding: '24px', textAlign: 'center', color: '#FF6B00' }}>Carregando...</div>
         ) : campaigns.map(c => (
           <div key={c.id} style={{
             display: 'flex', alignItems: 'center',
-            padding: '12px 16px', borderBottom: '1px solid #1e2d4a',
+            padding: '12px 16px', borderBottom: '1px solid #2a1a0a',
             transition: 'background 0.15s',
           }}
-            onMouseEnter={e => e.currentTarget.style.background = '#1a2234'}
+            onMouseEnter={e => e.currentTarget.style.background = '#1a1208'}
             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
           >
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ width: '3px', height: '20px', borderRadius: '2px', background: '#4361EE' }} />
+              <div style={{ width: '3px', height: '20px', borderRadius: '2px', background: '#FF6B00' }} />
               <span style={{ color: '#e5e7eb', fontSize: '13px' }}>{c.name}</span>
             </div>
             <div style={{ flex: 1, fontSize: '14px' }}>
@@ -179,9 +179,9 @@ export default function Campaigns() {
                 onClick={() => handleSend(c.id)}
                 disabled={sending === c.id || c.status === 'running'}
                 style={{
-                  background: sending === c.id ? '#1e2d4a' : '#4361EE22',
-                  color: '#4361EE',
-                  border: '1px solid #4361EE44',
+                  background: sending === c.id ? '#2a1a0a' : '#FF6B0022',
+                  color: '#FF6B00',
+                  border: '1px solid #FF6B0044',
                   borderRadius: '6px', padding: '4px 12px',
                   fontSize: '11px', fontWeight: '600',
                   cursor: 'pointer', transition: 'all 0.2s',
