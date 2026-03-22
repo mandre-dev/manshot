@@ -14,14 +14,14 @@ export default function Navbar() {
 
   return (
     <aside style={{
-      width: '64px',
+      width: '180px',
       minHeight: '100vh',
       background: '#0d1117',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      padding: '20px 0',
-      gap: '8px',
+      padding: '20px 12px',
+      gap: '4px',
       borderRight: '1px solid #2a1a0a',
       position: 'fixed',
       top: 0,
@@ -29,18 +29,18 @@ export default function Navbar() {
     }}>
       {/* Logo */}
       <div style={{
-        width: '44px',
-        height: '44px',
-        borderRadius: '8px',
+        width: '100%',
+        borderRadius: '10px',
         overflow: 'hidden',
-        marginBottom: '16px',
+        marginBottom: '24px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         background: '#1a1208',
         border: '1px solid #2a1a0a',
+        padding: '8px',
       }}>
-        <img src={logo} alt="Manshot" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        <img src={logo} alt="Manshot" style={{ width: '100%', objectFit: 'contain' }} />
       </div>
 
       {/* Links */}
@@ -50,22 +50,36 @@ export default function Navbar() {
           <Link
             key={link.path}
             to={link.path}
-            title={link.label}
             style={{
-              width: '40px',
-              height: '40px',
+              width: '100%',
               borderRadius: '8px',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '18px',
-              background: active ? '#FF6B0022' : 'transparent',
-              border: active ? '1px solid #FF6B0066' : '1px solid transparent',
+              gap: '10px',
+              padding: '10px 14px',
+              fontSize: '13px',
+              fontWeight: active ? '600' : '400',
+              color: active ? '#FF6B00' : '#6b7280',
+              background: active ? '#FF6B0015' : 'transparent',
+              border: active ? '1px solid #FF6B0033' : '1px solid transparent',
               textDecoration: 'none',
               transition: 'all 0.2s',
             }}
+            onMouseEnter={e => {
+              if (!active) {
+                e.currentTarget.style.color = '#e5e7eb'
+                e.currentTarget.style.background = '#1a1208'
+              }
+            }}
+            onMouseLeave={e => {
+              if (!active) {
+                e.currentTarget.style.color = '#6b7280'
+                e.currentTarget.style.background = 'transparent'
+              }
+            }}
           >
-            {link.icon}
+            <span style={{ fontSize: '16px' }}>{link.icon}</span>
+            <span>{link.label}</span>
           </Link>
         )
       })}
