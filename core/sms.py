@@ -1,7 +1,7 @@
 """
 sms.py — Manshot
 Canal de disparo via SMS usando Vonage.
-Trial gratuito funciona com números brasileiros.
+Imagens são enviadas como link no corpo da mensagem.
 """
 
 from vonage import Auth, Vonage
@@ -14,6 +14,7 @@ from .config import settings
 class SMSChannel(BaseChannel):
     """
     Disparo de SMS em massa via Vonage.
+    Imagens são incluídas como link na mensagem.
     """
 
     def __init__(self):
@@ -22,14 +23,18 @@ class SMSChannel(BaseChannel):
             api_secret=settings.VONAGE_API_SECRET
         ))
 
-    def send(self, contact: Contact, message: str) -> DispatchResult:
+    def send(self, contact: Contact, message: str, image_url: str = None) -> DispatchResult:
         """
         Envia SMS para um contato.
+        Se image_url for fornecida, adiciona o link da imagem na mensagem.
         O número deve estar no formato internacional sem +: 5521999999999
-        A mensagem suporta variáveis: use {name} para personalizar.
         """
         try:
             personalized_message = message.format(name=contact.name)
+
+            # Adiciona o link da imagem no SMS se houver
+            if image_url:
+                personalized_message += f"\n\nVer imagem: {image_url}"
 
             msg = SmsMessage(
                 to=contact.destination,
