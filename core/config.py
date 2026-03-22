@@ -21,13 +21,14 @@ class Settings(BaseSettings):
     # --- Telegram ---
     TELEGRAM_BOT_TOKEN: str = ""
 
+    # --- Redis (Celery) ---
+    REDIS_URL: str = ""
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
 
-     # --- Redis (Celery) ---
-     REDIS_URL: str = ""
+    # --- ImgBB (upload de imagens) ---
+    IMGBB_API_KEY: str = ""
 
-
-# Instância global — importada pelos outros módulos
 settings = Settings()
