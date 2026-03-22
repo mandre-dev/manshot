@@ -1,5 +1,4 @@
-// App.jsx — Manshot
-// Configura as rotas do dashboard
+// App.jsx — Manshot Cyber Tech
 
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Navbar from './components/Navbar'
@@ -10,9 +9,9 @@ import Campaigns from './pages/Campaigns'
 export default function App() {
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-gray-900">
+      <div style={{ display: 'flex', minHeight: '100vh', background: '#0a0e1a' }}>
         <Navbar />
-        <main className="max-w-6xl mx-auto">
+        <main style={{ marginLeft: '64px', flex: 1, padding: '24px' }}>
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/contacts" element={<Contacts />} />
