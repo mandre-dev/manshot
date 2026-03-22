@@ -16,9 +16,9 @@ const inputStyle = {
 
 const StatusPill = ({ status }) => {
   const colors = {
-    done:    { bg: '#064e3b', color: '#10b981' },
+    done: { bg: '#064e3b', color: '#10b981' },
     running: { bg: '#2a1a0a', color: '#FF8C00' },
-    failed:  { bg: '#4c1d24', color: '#f87171' },
+    failed: { bg: '#4c1d24', color: '#f87171' },
     pending: { bg: '#1f2937', color: '#9ca3af' },
   }
   const s = colors[status] || colors.pending
@@ -36,17 +36,23 @@ const CheckBox = ({ label, checked, onChange }) => (
     <div
       onClick={onChange}
       style={{
-        width: '18px', height: '18px', borderRadius: '4px',
+        width: '24px',
+        height: '24px',
+        borderRadius: '6px',
         background: checked ? '#FF6B00' : 'transparent',
-        border: `1px solid ${checked ? '#FF6B00' : '#2a1a0a'}`,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: '11px', color: '#fff', cursor: 'pointer',
+        border: `2px solid ${checked ? '#FF6B00' : '#FF6B0066'}`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '13px',
+        color: '#fff',
+        cursor: 'pointer',
         transition: 'all 0.2s',
       }}
     >
       {checked ? '✓' : ''}
     </div>
-    <span style={{ color: '#9ca3af', fontSize: '13px' }}>{label}</span>
+    <span style={{ color: '#9ca3af', fontSize: '13px', fontFamily: "'Space Mono', monospace" }}>{label}</span>
   </label>
 )
 
