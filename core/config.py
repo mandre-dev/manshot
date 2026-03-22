@@ -25,6 +25,9 @@ class Settings(BaseSettings):
         env_file = ".env"
         env_file_encoding = "utf-8"
 
+     # --- Redis (Celery) ---
+     REDIS_URL: str = ""
+
 
 # Instância global — importada pelos outros módulos
 settings = Settings()
