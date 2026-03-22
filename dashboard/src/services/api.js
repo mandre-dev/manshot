@@ -20,4 +20,13 @@ export const getCampaigns = () => api.get('/campaigns/')
 export const createCampaign = (data) => api.post('/campaigns/', data)
 export const sendCampaign = (id) => api.post(`/campaigns/${id}/send`)
 
+// ── Upload ──────────────────────────────────────────
+export const uploadImage = (file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return axios.post('http://127.0.0.1:8000/upload/image', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+}
+
 export default api
