@@ -1,7 +1,7 @@
 """
 routes/campaigns.py — Manshot
 Endpoints para gerenciar e disparar campanhas.
-Agora o disparo é assíncrono via Celery.
+Agora o disparo é assíncrono via Celery com suporte a imagem.
 """
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -46,7 +46,7 @@ def send_campaign(campaign_id: int, db: Session = Depends(get_db)):
     """
     Enfileira a campanha para disparo assíncrono.
     Responde imediatamente com status 'running'.
-    O Celery processa em background.
+    O Celery processa em background com suporte a imagem.
     """
     campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
     if not campaign:
@@ -59,7 +59,6 @@ def send_campaign(campaign_id: int, db: Session = Depends(get_db)):
     if not contacts:
         raise HTTPException(status_code=400, detail="Nenhum contato cadastrado")
 
-    # Serializa contatos para enviar ao Celery
     contacts_data = [
         {
             "name": c.name,
@@ -70,19 +69,18 @@ def send_campaign(campaign_id: int, db: Session = Depends(get_db)):
         for c in contacts
     ]
 
-    # Atualiza status para running
     campaign.status = StatusEnum.running
     db.commit()
     db.refresh(campaign)
 
-    # Enfileira a tarefa no Celery — responde imediatamente
     dispatch_campaign.delay(
         campaign_id=campaign.id,
         contacts=contacts_data,
         message=campaign.message,
         use_email=campaign.use_email,
         use_sms=campaign.use_sms,
-        use_telegram=campaign.use_telegram
+        use_telegram=campaign.use_telegram,
+        image_url=campaign.image_url
     )
 
     return campaign
