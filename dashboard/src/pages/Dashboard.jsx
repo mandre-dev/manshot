@@ -1,8 +1,36 @@
-// Dashboard.jsx — Manshot
-// Tela inicial com métricas gerais
+// Dashboard.jsx — Manshot Cyber Tech
 
 import { useEffect, useState } from 'react'
 import { getCampaigns, getContacts } from '../services/api'
+
+const Card = ({ label, value, color = '#4361EE' }) => (
+  <div style={{
+    background: '#111827',
+    border: '1px solid #1e2d4a',
+    borderRadius: '10px',
+    padding: '16px',
+  }}>
+    <div style={{ color: '#6b7280', fontSize: '11px', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
+    <div style={{ color, fontSize: '28px', fontWeight: '700' }}>{value}</div>
+  </div>
+)
+
+const StatusPill = ({ status }) => {
+  const colors = {
+    done:    { bg: '#064e3b', color: '#10b981' },
+    running: { bg: '#1e3a5f', color: '#60a5fa' },
+    failed:  { bg: '#4c1d24', color: '#f87171' },
+    pending: { bg: '#1f2937', color: '#9ca3af' },
+  }
+  const s = colors[status] || colors.pending
+  return (
+    <span style={{
+      background: s.bg, color: s.color,
+      fontSize: '10px', padding: '2px 8px',
+      borderRadius: '20px', fontWeight: '500'
+    }}>{status}</span>
+  )
+}
 
 export default function Dashboard() {
   const [campaigns, setCampaigns] = useState([])
@@ -26,76 +54,71 @@ export default function Dashboard() {
 
   const totalDispatched = campaigns.reduce((acc, c) => acc + c.total, 0)
   const totalSuccess = campaigns.reduce((acc, c) => acc + c.success, 0)
-  const totalFailed = campaigns.reduce((acc, c) => acc + c.failed, 0)
 
   if (loading) return (
-    <div className="flex items-center justify-center h-64 text-gray-400">
+    <div style={{ color: '#4361EE', padding: '40px', textAlign: 'center' }}>
       Carregando...
     </div>
   )
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold text-white mb-6">Dashboard</h1>
-
-      {/* Cards de métricas */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-gray-800 rounded-xl p-4">
-          <p className="text-gray-400 text-sm">Campanhas</p>
-          <p className="text-3xl font-bold text-indigo-400">{campaigns.length}</p>
+    <div>
+      {/* Header */}
+      <div style={{ marginBottom: '24px' }}>
+        <div style={{ color: '#6b7280', fontSize: '12px', marginBottom: '4px' }}>
+          Bem-vindo de volta, Mandré
         </div>
-        <div className="bg-gray-800 rounded-xl p-4">
-          <p className="text-gray-400 text-sm">Contatos</p>
-          <p className="text-3xl font-bold text-indigo-400">{contacts.length}</p>
-        </div>
-        <div className="bg-gray-800 rounded-xl p-4">
-          <p className="text-gray-400 text-sm">Disparos</p>
-          <p className="text-3xl font-bold text-indigo-400">{totalDispatched}</p>
-        </div>
-        <div className="bg-gray-800 rounded-xl p-4">
-          <p className="text-gray-400 text-sm">Sucesso</p>
-          <p className="text-3xl font-bold text-green-400">{totalSuccess}</p>
-        </div>
+        <h1 style={{ color: '#fff', fontSize: '22px', fontWeight: '700' }}>
+          Painel de controle
+        </h1>
       </div>
 
-      {/* Últimas campanhas */}
-      <h2 className="text-lg font-semibold text-white mb-4">Últimas campanhas</h2>
-      <div className="bg-gray-800 rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-gray-400 border-b border-gray-700">
-              <th className="text-left p-4">Nome</th>
-              <th className="text-left p-4">Canais</th>
-              <th className="text-left p-4">Status</th>
-              <th className="text-left p-4">Total</th>
-              <th className="text-left p-4">Sucesso</th>
-            </tr>
-          </thead>
-          <tbody>
-            {campaigns.map(c => (
-              <tr key={c.id} className="border-b border-gray-700 hover:bg-gray-700 transition">
-                <td className="p-4 text-white">{c.name}</td>
-                <td className="p-4 text-gray-300">
-                  {c.use_email && <span className="mr-1">📧</span>}
-                  {c.use_sms && <span className="mr-1">📱</span>}
-                  {c.use_telegram && <span>✈️</span>}
-                </td>
-                <td className="p-4">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    c.status === 'done' ? 'bg-green-900 text-green-400' :
-                    c.status === 'running' ? 'bg-yellow-900 text-yellow-400' :
-                    c.status === 'failed' ? 'bg-red-900 text-red-400' :
-                    'bg-gray-700 text-gray-400'
-                  }`}>
-                    {c.status}
-                  </span>
-                </td>
-                <td className="p-4 text-gray-300">{c.total}</td>
-                <td className="p-4 text-green-400">{c.success}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {/* Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '24px' }}>
+        <Card label="Campanhas" value={campaigns.length} />
+        <Card label="Contatos" value={contacts.length} />
+        <Card label="Disparos" value={totalDispatched} />
+        <Card label="Sucesso" value={totalSuccess} color="#10b981" />
+      </div>
+
+      {/* Tabela */}
+      <div style={{ background: '#111827', border: '1px solid #1e2d4a', borderRadius: '10px', overflow: 'hidden' }}>
+        <div style={{ padding: '16px', borderBottom: '1px solid #1e2d4a' }}>
+          <span style={{ color: '#fff', fontSize: '14px', fontWeight: '600' }}>Campanhas recentes</span>
+        </div>
+
+        {/* Header */}
+        <div style={{ display: 'flex', padding: '10px 16px', borderBottom: '1px solid #1e2d4a' }}>
+          {['Campanha', 'Canais', 'Status', 'Total', 'Sucesso'].map(h => (
+            <div key={h} style={{ flex: 1, color: '#4b5563', fontSize: '11px', fontWeight: '500', textTransform: 'uppercase' }}>{h}</div>
+          ))}
+        </div>
+
+        {/* Rows */}
+        {campaigns.map(c => (
+          <div key={c.id} style={{
+            display: 'flex', alignItems: 'center',
+            padding: '12px 16px',
+            borderBottom: '1px solid #1e2d4a',
+            transition: 'background 0.15s',
+          }}
+            onMouseEnter={e => e.currentTarget.style.background = '#1a2234'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          >
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '3px', height: '20px', borderRadius: '2px', background: '#4361EE' }} />
+              <span style={{ color: '#e5e7eb', fontSize: '13px' }}>{c.name}</span>
+            </div>
+            <div style={{ flex: 1, fontSize: '14px' }}>
+              {c.use_email && '📧 '}
+              {c.use_sms && '📱 '}
+              {c.use_telegram && '✈️'}
+            </div>
+            <div style={{ flex: 1 }}><StatusPill status={c.status} /></div>
+            <div style={{ flex: 1, color: '#9ca3af', fontSize: '13px' }}>{c.total}</div>
+            <div style={{ flex: 1, color: '#10b981', fontSize: '13px' }}>{c.success}</div>
+          </div>
+        ))}
       </div>
     </div>
   )
