@@ -1,6 +1,7 @@
 // Navbar.jsx — Manshot Orange Theme
 
 import { Link, useLocation } from 'react-router-dom'
+import logo from '../assets/logo-manshot.png'
 
 const links = [
   { path: '/', icon: '⚡', label: 'Dashboard' },
@@ -28,16 +29,19 @@ export default function Navbar() {
     }}>
       {/* Logo */}
       <div style={{
-        width: '36px',
-        height: '36px',
-        background: '#FF6B00',
+        width: '44px',
+        height: '44px',
         borderRadius: '8px',
+        overflow: 'hidden',
+        marginBottom: '16px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontSize: '16px',
-        marginBottom: '16px',
-      }}>⚡</div>
+        background: '#1a1208',
+        border: '1px solid #2a1a0a',
+      }}>
+        <img src={logo} alt="Manshot" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      </div>
 
       {/* Links */}
       {links.map(link => {
