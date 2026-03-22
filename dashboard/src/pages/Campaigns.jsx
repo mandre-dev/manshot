@@ -1,7 +1,7 @@
-// Campaigns.jsx — Manshot Orange Theme + Image Upload
+// Campaigns.jsx — Manshot Orange Theme + Image Upload + Menu
 
-import { useEffect, useState } from 'react'
-import { getCampaigns, createCampaign, sendCampaign, uploadImage } from '../services/api'
+import { useEffect, useState, useRef } from 'react'
+import { getCampaigns, createCampaign, updateCampaign, deleteCampaign, sendCampaign, uploadImage } from '../services/api'
 
 const inputStyle = {
   background: '#1a1208',
@@ -47,12 +47,65 @@ const CheckBox = ({ label, checked, onChange }) => (
   </label>
 )
 
+function DropdownMenu({ campaign, onEdit, onDelete }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef()
+
+  useEffect(() => {
+    function handleClick(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button onClick={() => setOpen(!open)} style={{
+        background: 'transparent', border: '1px solid #2a1a0a',
+        borderRadius: '6px', color: '#9ca3af', cursor: 'pointer',
+        padding: '4px 10px', fontSize: '16px', lineHeight: '1',
+        fontFamily: "'Space Mono', monospace",
+      }}>···</button>
+
+      {open && (
+        <div style={{
+          position: 'absolute', right: 0, top: '110%',
+          background: '#111827', border: '1px solid #2a1a0a',
+          borderRadius: '8px', overflow: 'hidden', zIndex: 100,
+          minWidth: '130px', boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+        }}>
+          <button onClick={() => { onEdit(campaign); setOpen(false) }} style={{
+            display: 'block', width: '100%', padding: '10px 16px',
+            background: 'transparent', border: 'none', color: '#e5e7eb',
+            fontSize: '12px', cursor: 'pointer', textAlign: 'left',
+            fontFamily: "'Space Mono', monospace",
+          }}
+            onMouseEnter={e => e.currentTarget.style.background = '#1a1208'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          >✏️ Editar</button>
+          <button onClick={() => { onDelete(campaign.id); setOpen(false) }} style={{
+            display: 'block', width: '100%', padding: '10px 16px',
+            background: 'transparent', border: 'none', color: '#f87171',
+            fontSize: '12px', cursor: 'pointer', textAlign: 'left',
+            fontFamily: "'Space Mono', monospace",
+          }}
+            onMouseEnter={e => e.currentTarget.style.background = '#4c1d24'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          >🗑️ Excluir</button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function Campaigns() {
   const [campaigns, setCampaigns] = useState([])
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [imagePreview, setImagePreview] = useState(null)
+  const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState({
     name: '', message: '', image_url: null,
     use_email: false, use_sms: false, use_telegram: false,
@@ -74,30 +127,53 @@ export default function Campaigns() {
   async function handleImageUpload(e) {
     const file = e.target.files[0]
     if (!file) return
-
     setUploading(true)
     try {
       const res = await uploadImage(file)
       setForm({ ...form, image_url: res.data.url })
       setImagePreview(URL.createObjectURL(file))
     } catch (err) {
-      console.error(err)
       alert('Erro ao fazer upload da imagem')
     } finally {
       setUploading(false)
     }
   }
 
-  async function handleCreate(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
     try {
-      await createCampaign(form)
+      if (editingId) {
+        await updateCampaign(editingId, form)
+        setEditingId(null)
+      } else {
+        await createCampaign(form)
+      }
       setForm({ name: '', message: '', image_url: null, use_email: false, use_sms: false, use_telegram: false })
       setImagePreview(null)
       load()
     } catch (err) {
       console.error(err)
     }
+  }
+
+  function handleEdit(campaign) {
+    setEditingId(campaign.id)
+    setForm({
+      name: campaign.name,
+      message: campaign.message,
+      image_url: campaign.image_url,
+      use_email: campaign.use_email,
+      use_sms: campaign.use_sms,
+      use_telegram: campaign.use_telegram,
+    })
+    setImagePreview(campaign.image_url)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  async function handleDelete(id) {
+    if (!confirm('Excluir campanha?')) return
+    await deleteCampaign(id)
+    load()
   }
 
   async function handleSend(id) {
@@ -115,18 +191,17 @@ export default function Campaigns() {
 
   return (
     <div>
-      {/* Header */}
       <div style={{ marginBottom: '24px' }}>
         <div style={{ color: '#6b7280', fontSize: '12px', marginBottom: '4px', fontFamily: "'Space Mono', monospace" }}>Gerenciamento</div>
         <h1 style={{ color: '#fff', fontSize: '36px', fontFamily: "'Teko', sans-serif", letterSpacing: '2px' }}>CAMPANHAS</h1>
       </div>
 
       {/* Formulário */}
-      <div style={{ background: '#111827', border: '1px solid #2a1a0a', borderRadius: '10px', padding: '20px', marginBottom: '20px' }}>
+      <div style={{ background: '#111827', border: `1px solid ${editingId ? '#FF6B00' : '#2a1a0a'}`, borderRadius: '10px', padding: '20px', marginBottom: '20px' }}>
         <div style={{ color: '#FF6B00', fontSize: '12px', fontWeight: '600', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: "'Space Mono', monospace" }}>
-          + Nova campanha
+          {editingId ? '✏️ Editando campanha' : '+ Nova campanha'}
         </div>
-        <form onSubmit={handleCreate}>
+        <form onSubmit={handleSubmit}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '14px' }}>
             <input style={inputStyle} placeholder="Nome da campanha *"
               value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
@@ -134,7 +209,7 @@ export default function Campaigns() {
               placeholder="Mensagem — use {name} para personalizar"
               value={form.message} onChange={e => setForm({ ...form, message: e.target.value })} required />
 
-            {/* Upload de imagem */}
+            {/* Upload */}
             <div style={{ border: '1px dashed #2a1a0a', borderRadius: '8px', padding: '16px', textAlign: 'center' }}>
               {imagePreview ? (
                 <div>
@@ -150,7 +225,7 @@ export default function Campaigns() {
               ) : (
                 <div>
                   <div style={{ color: '#6b7280', fontSize: '12px', marginBottom: '8px', fontFamily: "'Space Mono', monospace" }}>
-                    {uploading ? '⏳ Enviando imagem...' : '📎 Adicionar imagem (opcional)'}
+                    {uploading ? '⏳ Enviando...' : '📎 Adicionar imagem (opcional)'}
                   </div>
                   <input type="file" accept="image/*" onChange={handleImageUpload}
                     style={{ display: 'none' }} id="image-upload" disabled={uploading} />
@@ -159,32 +234,40 @@ export default function Campaigns() {
                     border: '1px solid #FF6B0044', borderRadius: '6px',
                     padding: '6px 16px', fontSize: '12px', cursor: 'pointer',
                     fontFamily: "'Space Mono', monospace"
-                  }}>
-                    Escolher arquivo
-                  </label>
+                  }}>Escolher arquivo</label>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Canais */}
           <div style={{ display: 'flex', gap: '24px', marginBottom: '14px' }}>
-            <CheckBox label="📧 Email" checked={form.use_email}
-              onChange={() => setForm({ ...form, use_email: !form.use_email })} />
-            <CheckBox label="📱 SMS" checked={form.use_sms}
-              onChange={() => setForm({ ...form, use_sms: !form.use_sms })} />
-            <CheckBox label="✈️ Telegram" checked={form.use_telegram}
-              onChange={() => setForm({ ...form, use_telegram: !form.use_telegram })} />
+            <CheckBox label="📧 Email" checked={form.use_email} onChange={() => setForm({ ...form, use_email: !form.use_email })} />
+            <CheckBox label="📱 SMS" checked={form.use_sms} onChange={() => setForm({ ...form, use_sms: !form.use_sms })} />
+            <CheckBox label="✈️ Telegram" checked={form.use_telegram} onChange={() => setForm({ ...form, use_telegram: !form.use_telegram })} />
           </div>
 
-          <button type="submit" style={{
-            background: '#FF6B00', color: '#fff', border: 'none',
-            borderRadius: '8px', padding: '10px 20px', fontSize: '13px',
-            fontWeight: '600', cursor: 'pointer', width: '100%',
-            fontFamily: "'Space Mono', monospace"
-          }}>
-            Criar campanha
-          </button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button type="submit" style={{
+              background: '#FF6B00', color: '#fff', border: 'none',
+              borderRadius: '8px', padding: '10px 20px', fontSize: '13px',
+              fontWeight: '600', cursor: 'pointer', flex: 1,
+              fontFamily: "'Space Mono', monospace"
+            }}>
+              {editingId ? '✏️ Salvar alterações' : 'Criar campanha'}
+            </button>
+            {editingId && (
+              <button type="button" onClick={() => {
+                setEditingId(null)
+                setForm({ name: '', message: '', image_url: null, use_email: false, use_sms: false, use_telegram: false })
+                setImagePreview(null)
+              }} style={{
+                background: 'transparent', color: '#9ca3af',
+                border: '1px solid #2a1a0a', borderRadius: '8px',
+                padding: '10px 20px', fontSize: '13px', cursor: 'pointer',
+                fontFamily: "'Space Mono', monospace"
+              }}>Cancelar</button>
+            )}
+          </div>
         </form>
       </div>
 
@@ -196,7 +279,7 @@ export default function Campaigns() {
         </div>
 
         <div style={{ display: 'flex', padding: '10px 16px', borderBottom: '1px solid #2a1a0a' }}>
-          {['Campanha', 'Imagem', 'Canais', 'Status', 'Total', 'Sucesso', 'Ação'].map(h => (
+          {['Campanha', 'Imagem', 'Canais', 'Status', 'Total', 'Sucesso', 'Disparar', ''].map(h => (
             <div key={h} style={{ flex: 1, color: '#4b5563', fontSize: '11px', fontWeight: '500', textTransform: 'uppercase', fontFamily: "'Space Mono', monospace" }}>{h}</div>
           ))}
         </div>
@@ -244,6 +327,9 @@ export default function Campaigns() {
                 }}>
                 {sending === c.id ? 'Disparando...' : '▶ Disparar'}
               </button>
+            </div>
+            <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
+              <DropdownMenu campaign={c} onEdit={handleEdit} onDelete={handleDelete} />
             </div>
           </div>
         ))}
