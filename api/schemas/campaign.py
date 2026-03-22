@@ -13,6 +13,7 @@ class CampaignCreate(BaseModel):
     """Dados necessários para criar uma campanha."""
     name: str
     message: str
+    image_url: Optional[str] = None
     use_email: bool = False
     use_sms: bool = False
     use_telegram: bool = False
@@ -23,6 +24,7 @@ class CampaignResponse(BaseModel):
     id: int
     name: str
     message: str
+    image_url: Optional[str] = None
     use_email: bool
     use_sms: bool
     use_telegram: bool
