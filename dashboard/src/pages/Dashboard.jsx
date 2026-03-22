@@ -1,12 +1,12 @@
-// Dashboard.jsx — Manshot Cyber Tech
+// Dashboard.jsx — Manshot Orange Theme
 
 import { useEffect, useState } from 'react'
 import { getCampaigns, getContacts } from '../services/api'
 
-const Card = ({ label, value, color = '#4361EE' }) => (
+const Card = ({ label, value, color = '#FF6B00' }) => (
   <div style={{
     background: '#111827',
-    border: '1px solid #1e2d4a',
+    border: '1px solid #2a1a0a',
     borderRadius: '10px',
     padding: '16px',
   }}>
@@ -18,7 +18,7 @@ const Card = ({ label, value, color = '#4361EE' }) => (
 const StatusPill = ({ status }) => {
   const colors = {
     done:    { bg: '#064e3b', color: '#10b981' },
-    running: { bg: '#1e3a5f', color: '#60a5fa' },
+    running: { bg: '#2a1a0a', color: '#FF8C00' },
     failed:  { bg: '#4c1d24', color: '#f87171' },
     pending: { bg: '#1f2937', color: '#9ca3af' },
   }
@@ -56,7 +56,7 @@ export default function Dashboard() {
   const totalSuccess = campaigns.reduce((acc, c) => acc + c.success, 0)
 
   if (loading) return (
-    <div style={{ color: '#4361EE', padding: '40px', textAlign: 'center' }}>
+    <div style={{ color: '#FF6B00', padding: '40px', textAlign: 'center' }}>
       Carregando...
     </div>
   )
@@ -82,31 +82,29 @@ export default function Dashboard() {
       </div>
 
       {/* Tabela */}
-      <div style={{ background: '#111827', border: '1px solid #1e2d4a', borderRadius: '10px', overflow: 'hidden' }}>
-        <div style={{ padding: '16px', borderBottom: '1px solid #1e2d4a' }}>
+      <div style={{ background: '#111827', border: '1px solid #2a1a0a', borderRadius: '10px', overflow: 'hidden' }}>
+        <div style={{ padding: '16px', borderBottom: '1px solid #2a1a0a' }}>
           <span style={{ color: '#fff', fontSize: '14px', fontWeight: '600' }}>Campanhas recentes</span>
         </div>
 
-        {/* Header */}
-        <div style={{ display: 'flex', padding: '10px 16px', borderBottom: '1px solid #1e2d4a' }}>
+        <div style={{ display: 'flex', padding: '10px 16px', borderBottom: '1px solid #2a1a0a' }}>
           {['Campanha', 'Canais', 'Status', 'Total', 'Sucesso'].map(h => (
             <div key={h} style={{ flex: 1, color: '#4b5563', fontSize: '11px', fontWeight: '500', textTransform: 'uppercase' }}>{h}</div>
           ))}
         </div>
 
-        {/* Rows */}
         {campaigns.map(c => (
           <div key={c.id} style={{
             display: 'flex', alignItems: 'center',
             padding: '12px 16px',
-            borderBottom: '1px solid #1e2d4a',
+            borderBottom: '1px solid #2a1a0a',
             transition: 'background 0.15s',
           }}
-            onMouseEnter={e => e.currentTarget.style.background = '#1a2234'}
+            onMouseEnter={e => e.currentTarget.style.background = '#1a1208'}
             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
           >
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ width: '3px', height: '20px', borderRadius: '2px', background: '#4361EE' }} />
+              <div style={{ width: '3px', height: '20px', borderRadius: '2px', background: '#FF6B00' }} />
               <span style={{ color: '#e5e7eb', fontSize: '13px' }}>{c.name}</span>
             </div>
             <div style={{ flex: 1, fontSize: '14px' }}>
