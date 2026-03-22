@@ -1,19 +1,62 @@
-// Campaigns.jsx — Manshot
-// Página de gerenciamento e disparo de campanhas
+// Campaigns.jsx — Manshot Cyber Tech
 
 import { useEffect, useState } from 'react'
 import { getCampaigns, createCampaign, sendCampaign } from '../services/api'
+
+const inputStyle = {
+  background: '#1a2234',
+  border: '1px solid #1e2d4a',
+  borderRadius: '8px',
+  padding: '10px 14px',
+  color: '#e5e7eb',
+  fontSize: '13px',
+  outline: 'none',
+  width: '100%',
+}
+
+const StatusPill = ({ status }) => {
+  const colors = {
+    done:    { bg: '#064e3b', color: '#10b981' },
+    running: { bg: '#1e3a5f', color: '#60a5fa' },
+    failed:  { bg: '#4c1d24', color: '#f87171' },
+    pending: { bg: '#1f2937', color: '#9ca3af' },
+  }
+  const s = colors[status] || colors.pending
+  return (
+    <span style={{
+      background: s.bg, color: s.color,
+      fontSize: '10px', padding: '2px 8px',
+      borderRadius: '20px', fontWeight: '500'
+    }}>{status}</span>
+  )
+}
+
+const CheckBox = ({ label, checked, onChange }) => (
+  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+    <div
+      onClick={onChange}
+      style={{
+        width: '18px', height: '18px', borderRadius: '4px',
+        background: checked ? '#4361EE' : 'transparent',
+        border: `1px solid ${checked ? '#4361EE' : '#1e2d4a'}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: '11px', color: '#fff', cursor: 'pointer',
+        transition: 'all 0.2s',
+      }}
+    >
+      {checked ? '✓' : ''}
+    </div>
+    <span style={{ color: '#9ca3af', fontSize: '13px' }}>{label}</span>
+  </label>
+)
 
 export default function Campaigns() {
   const [campaigns, setCampaigns] = useState([])
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(null)
   const [form, setForm] = useState({
-    name: '',
-    message: '',
-    use_email: false,
-    use_sms: false,
-    use_telegram: false,
+    name: '', message: '',
+    use_email: false, use_sms: false, use_telegram: false,
   })
 
   async function load() {
@@ -54,117 +97,102 @@ export default function Campaigns() {
   }
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold text-white mb-6">Campanhas</h1>
+    <div>
+      {/* Header */}
+      <div style={{ marginBottom: '24px' }}>
+        <div style={{ color: '#6b7280', fontSize: '12px', marginBottom: '4px' }}>Gerenciamento</div>
+        <h1 style={{ color: '#fff', fontSize: '22px', fontWeight: '700' }}>Campanhas</h1>
+      </div>
 
       {/* Formulário */}
-      <div className="bg-gray-800 rounded-xl p-6 mb-6">
-        <h2 className="text-lg font-semibold text-white mb-4">Nova campanha</h2>
-        <form onSubmit={handleCreate} className="flex flex-col gap-4">
-          <input
-            className="bg-gray-700 text-white rounded-lg px-4 py-2 text-sm"
-            placeholder="Nome da campanha *"
-            value={form.name}
-            onChange={e => setForm({ ...form, name: e.target.value })}
-            required
-          />
-          <textarea
-            className="bg-gray-700 text-white rounded-lg px-4 py-2 text-sm h-24 resize-none"
-            placeholder="Mensagem — use {name} para personalizar"
-            value={form.message}
-            onChange={e => setForm({ ...form, message: e.target.value })}
-            required
-          />
-
-          {/* Canais */}
-          <div className="flex gap-6">
-            <label className="flex items-center gap-2 text-gray-300 text-sm cursor-pointer">
-              <input
-                type="checkbox"
-                checked={form.use_email}
-                onChange={e => setForm({ ...form, use_email: e.target.checked })}
-                className="accent-indigo-500"
-              />
-              📧 Email
-            </label>
-            <label className="flex items-center gap-2 text-gray-300 text-sm cursor-pointer">
-              <input
-                type="checkbox"
-                checked={form.use_sms}
-                onChange={e => setForm({ ...form, use_sms: e.target.checked })}
-                className="accent-indigo-500"
-              />
-              📱 SMS
-            </label>
-            <label className="flex items-center gap-2 text-gray-300 text-sm cursor-pointer">
-              <input
-                type="checkbox"
-                checked={form.use_telegram}
-                onChange={e => setForm({ ...form, use_telegram: e.target.checked })}
-                className="accent-indigo-500"
-              />
-              ✈️ Telegram
-            </label>
+      <div style={{ background: '#111827', border: '1px solid #1e2d4a', borderRadius: '10px', padding: '20px', marginBottom: '20px' }}>
+        <div style={{ color: '#4361EE', fontSize: '12px', fontWeight: '600', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          + Nova campanha
+        </div>
+        <form onSubmit={handleCreate}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '14px' }}>
+            <input style={inputStyle} placeholder="Nome da campanha *"
+              value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
+            <textarea style={{ ...inputStyle, height: '80px', resize: 'none' }}
+              placeholder="Mensagem — use {name} para personalizar"
+              value={form.message} onChange={e => setForm({ ...form, message: e.target.value })} required />
           </div>
 
-          <button
-            type="submit"
-            className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg py-2 text-sm font-medium transition"
-          >
+          {/* Canais */}
+          <div style={{ display: 'flex', gap: '24px', marginBottom: '14px' }}>
+            <CheckBox label="📧 Email" checked={form.use_email}
+              onChange={() => setForm({ ...form, use_email: !form.use_email })} />
+            <CheckBox label="📱 SMS" checked={form.use_sms}
+              onChange={() => setForm({ ...form, use_sms: !form.use_sms })} />
+            <CheckBox label="✈️ Telegram" checked={form.use_telegram}
+              onChange={() => setForm({ ...form, use_telegram: !form.use_telegram })} />
+          </div>
+
+          <button type="submit" style={{
+            background: '#4361EE', color: '#fff', border: 'none',
+            borderRadius: '8px', padding: '10px 20px', fontSize: '13px',
+            fontWeight: '600', cursor: 'pointer', width: '100%',
+          }}>
             Criar campanha
           </button>
         </form>
       </div>
 
-      {/* Lista */}
-      <div className="bg-gray-800 rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-gray-400 border-b border-gray-700">
-              <th className="text-left p-4">Nome</th>
-              <th className="text-left p-4">Canais</th>
-              <th className="text-left p-4">Status</th>
-              <th className="text-left p-4">Total</th>
-              <th className="text-left p-4">Sucesso</th>
-              <th className="text-left p-4">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={6} className="p-4 text-center text-gray-400">Carregando...</td></tr>
-            ) : campaigns.map(c => (
-              <tr key={c.id} className="border-b border-gray-700 hover:bg-gray-700 transition">
-                <td className="p-4 text-white">{c.name}</td>
-                <td className="p-4 text-gray-300">
-                  {c.use_email && <span className="mr-1">📧</span>}
-                  {c.use_sms && <span className="mr-1">📱</span>}
-                  {c.use_telegram && <span>✈️</span>}
-                </td>
-                <td className="p-4">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    c.status === 'done' ? 'bg-green-900 text-green-400' :
-                    c.status === 'running' ? 'bg-yellow-900 text-yellow-400' :
-                    c.status === 'failed' ? 'bg-red-900 text-red-400' :
-                    'bg-gray-700 text-gray-400'
-                  }`}>
-                    {c.status}
-                  </span>
-                </td>
-                <td className="p-4 text-gray-300">{c.total}</td>
-                <td className="p-4 text-green-400">{c.success}</td>
-                <td className="p-4">
-                  <button
-                    onClick={() => handleSend(c.id)}
-                    disabled={sending === c.id || c.status === 'running'}
-                    className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white px-3 py-1 rounded-lg text-xs transition"
-                  >
-                    {sending === c.id ? 'Disparando...' : 'Disparar'}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {/* Tabela */}
+      <div style={{ background: '#111827', border: '1px solid #1e2d4a', borderRadius: '10px', overflow: 'hidden' }}>
+        <div style={{ padding: '16px', borderBottom: '1px solid #1e2d4a' }}>
+          <span style={{ color: '#fff', fontSize: '14px', fontWeight: '600' }}>Campanhas</span>
+          <span style={{ color: '#6b7280', fontSize: '12px', marginLeft: '8px' }}>({campaigns.length} total)</span>
+        </div>
+
+        <div style={{ display: 'flex', padding: '10px 16px', borderBottom: '1px solid #1e2d4a' }}>
+          {['Campanha', 'Canais', 'Status', 'Total', 'Sucesso', 'Ação'].map(h => (
+            <div key={h} style={{ flex: 1, color: '#4b5563', fontSize: '11px', fontWeight: '500', textTransform: 'uppercase' }}>{h}</div>
+          ))}
+        </div>
+
+        {loading ? (
+          <div style={{ padding: '24px', textAlign: 'center', color: '#4361EE' }}>Carregando...</div>
+        ) : campaigns.map(c => (
+          <div key={c.id} style={{
+            display: 'flex', alignItems: 'center',
+            padding: '12px 16px', borderBottom: '1px solid #1e2d4a',
+            transition: 'background 0.15s',
+          }}
+            onMouseEnter={e => e.currentTarget.style.background = '#1a2234'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          >
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '3px', height: '20px', borderRadius: '2px', background: '#4361EE' }} />
+              <span style={{ color: '#e5e7eb', fontSize: '13px' }}>{c.name}</span>
+            </div>
+            <div style={{ flex: 1, fontSize: '14px' }}>
+              {c.use_email && '📧 '}
+              {c.use_sms && '📱 '}
+              {c.use_telegram && '✈️'}
+            </div>
+            <div style={{ flex: 1 }}><StatusPill status={c.status} /></div>
+            <div style={{ flex: 1, color: '#9ca3af', fontSize: '13px' }}>{c.total}</div>
+            <div style={{ flex: 1, color: '#10b981', fontSize: '13px' }}>{c.success}</div>
+            <div style={{ flex: 1 }}>
+              <button
+                onClick={() => handleSend(c.id)}
+                disabled={sending === c.id || c.status === 'running'}
+                style={{
+                  background: sending === c.id ? '#1e2d4a' : '#4361EE22',
+                  color: '#4361EE',
+                  border: '1px solid #4361EE44',
+                  borderRadius: '6px', padding: '4px 12px',
+                  fontSize: '11px', fontWeight: '600',
+                  cursor: 'pointer', transition: 'all 0.2s',
+                  opacity: c.status === 'running' ? 0.5 : 1,
+                }}
+              >
+                {sending === c.id ? 'Disparando...' : '▶ Disparar'}
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   )
