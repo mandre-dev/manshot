@@ -1,5 +1,4 @@
-// Navbar.jsx — Manshot Cyber Tech
-// Sidebar lateral com ícones
+// Navbar.jsx — Manshot Orange Theme
 
 import { Link, useLocation } from 'react-router-dom'
 
@@ -16,13 +15,13 @@ export default function Navbar() {
     <aside style={{
       width: '64px',
       minHeight: '100vh',
-      background: '#111827',
+      background: '#0d1117',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       padding: '20px 0',
       gap: '8px',
-      borderRight: '1px solid #1e2d4a',
+      borderRight: '1px solid #2a1a0a',
       position: 'fixed',
       top: 0,
       left: 0,
@@ -31,7 +30,7 @@ export default function Navbar() {
       <div style={{
         width: '36px',
         height: '36px',
-        background: '#4361EE',
+        background: '#FF6B00',
         borderRadius: '8px',
         display: 'flex',
         alignItems: 'center',
@@ -56,8 +55,8 @@ export default function Navbar() {
               alignItems: 'center',
               justifyContent: 'center',
               fontSize: '18px',
-              background: active ? '#4361EE22' : 'transparent',
-              border: active ? '1px solid #4361EE66' : '1px solid transparent',
+              background: active ? '#FF6B0022' : 'transparent',
+              border: active ? '1px solid #FF6B0066' : '1px solid transparent',
               textDecoration: 'none',
               transition: 'all 0.2s',
             }}
