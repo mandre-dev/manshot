@@ -33,7 +33,7 @@ async def upload_to_imgbb(image_bytes: bytes) -> str:
     if not data.get("success"):
         raise HTTPException(status_code=400, detail="Erro ao fazer upload da imagem")
 
-    return data["data"]["url"]
+    return data["data"]["display_url"]
 
 
 @router.post("/image")
