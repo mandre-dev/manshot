@@ -2,10 +2,11 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { getCampaigns, createCampaign, updateCampaign, deleteCampaign, sendCampaign, uploadImage } from '../services/api'
+import { Mail, MessageSquare, Send } from 'lucide-react'
 
 const inputStyle = {
   background: '#1a1208',
-  border: '1px solid #2a1a0a',
+  border: '2px solid #2a1a0a',
   borderRadius: '8px',
   padding: '10px 14px',
   color: '#e5e7eb',
@@ -17,9 +18,9 @@ const inputStyle = {
 
 const StatusPill = ({ status }) => {
   const colors = {
-    done:    { bg: '#064e3b', color: '#10b981' },
+    done: { bg: '#064e3b', color: '#10b981' },
     running: { bg: '#2a1a0a', color: '#FF8C00' },
-    failed:  { bg: '#4c1d24', color: '#f87171' },
+    failed: { bg: '#4c1d24', color: '#f87171' },
     pending: { bg: '#1f2937', color: '#9ca3af' },
   }
   const s = colors[status] || colors.pending
@@ -32,7 +33,13 @@ const StatusPill = ({ status }) => {
   )
 }
 
-const CheckBox = ({ label, checked, onChange }) => (
+const icons = {
+  email: <Mail size={14} color="#FF6B00" />,
+  sms: <MessageSquare size={14} color="#FF6B00" />,
+  telegram: <Send size={14} color="#FF6B00" />,
+}
+
+const CheckBox = ({ label, checked, onChange, icon }) => (
   <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
     <div onClick={onChange} style={{
       width: '24px', height: '24px', borderRadius: '6px',
@@ -43,7 +50,10 @@ const CheckBox = ({ label, checked, onChange }) => (
     }}>
       {checked ? '✓' : ''}
     </div>
-    <span style={{ color: '#9ca3af', fontSize: '13px', fontFamily: "'Space Mono', monospace" }}>{label}</span>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+      {icons[icon]}
+      <span style={{ color: '#9ca3af', fontSize: '13px', fontFamily: "'Space Mono', monospace" }}>{label}</span>
+    </div>
   </label>
 )
 
@@ -62,7 +72,7 @@ function DropdownMenu({ campaign, onEdit, onDelete }) {
   return (
     <div ref={ref} style={{ position: 'relative' }}>
       <button onClick={() => setOpen(!open)} style={{
-        background: 'transparent', border: '1px solid #2a1a0a',
+        background: 'transparent', border: '2px solid #2a1a0a',
         borderRadius: '6px', color: '#9ca3af', cursor: 'pointer',
         padding: '4px 10px', fontSize: '16px', lineHeight: '1',
         fontFamily: "'Space Mono', monospace",
@@ -70,8 +80,8 @@ function DropdownMenu({ campaign, onEdit, onDelete }) {
 
       {open && (
         <div style={{
-          position: 'absolute', right: 0, top: '110%',
-          background: '#111827', border: '1px solid #2a1a0a',
+          position: 'absolute', right: 0, bottom: '110%',
+          background: '#111827', border: '2px solid #2a1a0a',
           borderRadius: '8px', overflow: 'hidden', zIndex: 100,
           minWidth: '130px', boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
         }}>
@@ -193,11 +203,11 @@ export default function Campaigns() {
     <div>
       <div style={{ marginBottom: '24px' }}>
         <div style={{ color: '#6b7280', fontSize: '12px', marginBottom: '4px', fontFamily: "'Space Mono', monospace" }}>Gerenciamento</div>
-        <h1 style={{ color: '#fff', fontSize: '36px', fontFamily: "'Teko', sans-serif", letterSpacing: '2px' }}>CAMPANHAS</h1>
+        <div style={{ color: '#fff', fontSize: '22px', fontFamily: "'Fira Code', monospace", fontWeight: '700', letterSpacing: '0px' }}>CAMPANHAS</div>
       </div>
 
       {/* Formulário */}
-      <div style={{ background: '#111827', border: `1px solid ${editingId ? '#FF6B00' : '#2a1a0a'}`, borderRadius: '10px', padding: '20px', marginBottom: '20px' }}>
+      <div style={{ background: '#111827', border: `2px solid ${editingId ? '#FF6B00' : '#2a1a0a'}`, borderRadius: '10px', padding: '20px', marginBottom: '20px' }}>
         <div style={{ color: '#FF6B00', fontSize: '12px', fontWeight: '600', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: "'Space Mono', monospace" }}>
           {editingId ? '✏️ Editando campanha' : '+ Nova campanha'}
         </div>
@@ -241,9 +251,12 @@ export default function Campaigns() {
           </div>
 
           <div style={{ display: 'flex', gap: '24px', marginBottom: '14px' }}>
-            <CheckBox label="📧 Email" checked={form.use_email} onChange={() => setForm({ ...form, use_email: !form.use_email })} />
-            <CheckBox label="📱 SMS" checked={form.use_sms} onChange={() => setForm({ ...form, use_sms: !form.use_sms })} />
-            <CheckBox label="✈️ Telegram" checked={form.use_telegram} onChange={() => setForm({ ...form, use_telegram: !form.use_telegram })} />
+            <CheckBox label="Email" icon="email" checked={form.use_email}
+              onChange={() => setForm({ ...form, use_email: !form.use_email })} />
+            <CheckBox label="SMS" icon="sms" checked={form.use_sms}
+              onChange={() => setForm({ ...form, use_sms: !form.use_sms })} />
+            <CheckBox label="Telegram" icon="telegram" checked={form.use_telegram}
+              onChange={() => setForm({ ...form, use_telegram: !form.use_telegram })} />
           </div>
 
           <div style={{ display: 'flex', gap: '8px' }}>
@@ -253,7 +266,7 @@ export default function Campaigns() {
               fontWeight: '600', cursor: 'pointer', flex: 1,
               fontFamily: "'Space Mono', monospace"
             }}>
-              {editingId ? '✏️ Salvar alterações' : 'Criar campanha'}
+              {editingId ? 'Salvar alterações' : 'Criar campanha'}
             </button>
             {editingId && (
               <button type="button" onClick={() => {
@@ -262,7 +275,7 @@ export default function Campaigns() {
                 setImagePreview(null)
               }} style={{
                 background: 'transparent', color: '#9ca3af',
-                border: '1px solid #2a1a0a', borderRadius: '8px',
+                border: '2px solid #2a1a0a', borderRadius: '8px',
                 padding: '10px 20px', fontSize: '13px', cursor: 'pointer',
                 fontFamily: "'Space Mono', monospace"
               }}>Cancelar</button>
@@ -272,13 +285,13 @@ export default function Campaigns() {
       </div>
 
       {/* Tabela */}
-      <div style={{ background: '#111827', border: '1px solid #2a1a0a', borderRadius: '10px', overflow: 'hidden' }}>
-        <div style={{ padding: '16px', borderBottom: '1px solid #2a1a0a' }}>
+      <div style={{ background: '#111827', border: '2px solid #2a1a0a', borderRadius: '10px', overflow: 'hidden' }}>
+        <div style={{ padding: '16px', borderBottom: '2px solid #2a1a0a' }}>
           <span style={{ color: '#fff', fontSize: '14px', fontWeight: '600', fontFamily: "'Space Mono', monospace" }}>Campanhas</span>
           <span style={{ color: '#6b7280', fontSize: '12px', marginLeft: '8px', fontFamily: "'Space Mono', monospace" }}>({campaigns.length} total)</span>
         </div>
 
-        <div style={{ display: 'flex', padding: '10px 16px', borderBottom: '1px solid #2a1a0a' }}>
+        <div style={{ display: 'flex', padding: '10px 16px', borderBottom: '2px solid #2a1a0a' }}>
           {['Campanha', 'Imagem', 'Canais', 'Status', 'Total', 'Sucesso', 'Disparar', ''].map(h => (
             <div key={h} style={{ flex: 1, color: '#4b5563', fontSize: '11px', fontWeight: '500', textTransform: 'uppercase', fontFamily: "'Space Mono', monospace" }}>{h}</div>
           ))}
@@ -289,7 +302,7 @@ export default function Campaigns() {
         ) : campaigns.map(c => (
           <div key={c.id} style={{
             display: 'flex', alignItems: 'center',
-            padding: '12px 16px', borderBottom: '1px solid #2a1a0a',
+            padding: '12px 16px', borderBottom: '2px solid #2a1a0a',
             transition: 'background 0.15s',
           }}
             onMouseEnter={e => e.currentTarget.style.background = '#1a1208'}
