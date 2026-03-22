@@ -84,3 +84,27 @@ def send_campaign(campaign_id: int, db: Session = Depends(get_db)):
     )
 
     return campaign
+
+
+@router.delete("/{campaign_id}")
+def delete_campaign(campaign_id: int, db: Session = Depends(get_db)):
+    """Remove uma campanha."""
+    campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campanha não encontrada")
+    db.delete(campaign)
+    db.commit()
+    return {"message": "Campanha removida com sucesso"}
+
+
+@router.put("/{campaign_id}", response_model=CampaignResponse)
+def update_campaign(campaign_id: int, data: CampaignCreate, db: Session = Depends(get_db)):
+    """Atualiza uma campanha."""
+    campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campanha não encontrada")
+    for key, value in data.model_dump().items():
+        setattr(campaign, key, value)
+    db.commit()
+    db.refresh(campaign)
+    return campaign
