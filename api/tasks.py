@@ -5,11 +5,11 @@ O disparo em massa acontece aqui em background,
 sem travar a API enquanto processa.
 """
 
+import ssl
 from celery import Celery
 from core import EmailChannel, SMSChannel, TelegramChannel
 from core.base import Contact as CoreContact
 from core.config import settings
-import ssl
 
 # Configura o Celery com Redis como broker
 celery_app = Celery(
@@ -22,21 +22,19 @@ celery_app.conf.update(
     task_serializer="json",
     result_serializer="json",
     accept_content=["json"],
-    broker_use_ssl={
-        "ssl_cert_reqs": ssl.CERT_NONE
-    },
-    redis_backend_use_ssl={
-        "ssl_cert_reqs": ssl.CERT_NONE
-    },
+    broker_use_ssl={"ssl_cert_reqs": ssl.CERT_NONE},
+    redis_backend_use_ssl={"ssl_cert_reqs": ssl.CERT_NONE},
 )
+
 
 @celery_app.task(bind=True, max_retries=3)
 def dispatch_campaign(self, campaign_id: int, contacts: list, message: str,
-                      use_email: bool, use_sms: bool, use_telegram: bool):
+                      use_email: bool, use_sms: bool, use_telegram: bool,
+                      image_url: str = None):
     """
     Tarefa principal de disparo.
     Processa todos os contatos em background.
-    Retry automático em caso de falha.
+    Suporta envio de imagem via ImgBB.
     """
     from api.database import SessionLocal
     from api.models.campaign import Campaign, StatusEnum
@@ -53,7 +51,7 @@ def dispatch_campaign(self, campaign_id: int, contacts: list, message: str,
             # Disparo via Email
             if use_email and contact.get("email"):
                 core_contact = CoreContact(name=name, destination=contact["email"])
-                result = EmailChannel().send(core_contact, message)
+                result = EmailChannel().send(core_contact, message, image_url=image_url)
                 total += 1
                 success += 1 if result.success else 0
                 failed += 1 if not result.success else 0
@@ -61,7 +59,7 @@ def dispatch_campaign(self, campaign_id: int, contacts: list, message: str,
             # Disparo via SMS
             if use_sms and contact.get("phone"):
                 core_contact = CoreContact(name=name, destination=contact["phone"])
-                result = SMSChannel().send(core_contact, message)
+                result = SMSChannel().send(core_contact, message, image_url=image_url)
                 total += 1
                 success += 1 if result.success else 0
                 failed += 1 if not result.success else 0
@@ -69,7 +67,7 @@ def dispatch_campaign(self, campaign_id: int, contacts: list, message: str,
             # Disparo via Telegram
             if use_telegram and contact.get("telegram_id"):
                 core_contact = CoreContact(name=name, destination=contact["telegram_id"])
-                result = TelegramChannel().send(core_contact, message)
+                result = TelegramChannel().send(core_contact, message, image_url=image_url)
                 total += 1
                 success += 1 if result.success else 0
                 failed += 1 if not result.success else 0
@@ -84,7 +82,6 @@ def dispatch_campaign(self, campaign_id: int, contacts: list, message: str,
             db.commit()
 
     except Exception as exc:
-        # Atualiza status para failed e tenta novamente
         campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
         if campaign:
             campaign.status = StatusEnum.failed
