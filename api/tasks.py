@@ -9,6 +9,7 @@ from celery import Celery
 from core import EmailChannel, SMSChannel, TelegramChannel
 from core.base import Contact as CoreContact
 from core.config import settings
+import ssl
 
 # Configura o Celery com Redis como broker
 celery_app = Celery(
@@ -21,10 +22,13 @@ celery_app.conf.update(
     task_serializer="json",
     result_serializer="json",
     accept_content=["json"],
-    broker_use_ssl={"ssl_cert_reqs": "CERT_NONE"},
-    redis_backend_use_ssl={"ssl_cert_reqs": "CERT_NONE"},
+    broker_use_ssl={
+        "ssl_cert_reqs": ssl.CERT_NONE
+    },
+    redis_backend_use_ssl={
+        "ssl_cert_reqs": ssl.CERT_NONE
+    },
 )
-
 
 @celery_app.task(bind=True, max_retries=3)
 def dispatch_campaign(self, campaign_id: int, contacts: list, message: str,
