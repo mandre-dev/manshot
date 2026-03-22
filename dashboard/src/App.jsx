@@ -11,7 +11,7 @@ export default function App() {
     <BrowserRouter>
       <div style={{ display: 'flex', minHeight: '100vh', background: '#0a0e1a' }}>
         <Navbar />
-        <main style={{ marginLeft: '64px', flex: 1, padding: '24px' }}>
+        <main style={{ marginLeft: '180px', flex: 1, padding: '24px' }}>
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/contacts" element={<Contacts />} />
