@@ -1,6 +1,7 @@
 """
 routes/campaigns.py — Manshot
 Endpoints para gerenciar e disparar campanhas.
+Agora o disparo é assíncrono via Celery.
 """
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -9,8 +10,7 @@ from api.database import get_db
 from api.models.campaign import Campaign, StatusEnum
 from api.models.contact import Contact
 from api.schemas.campaign import CampaignCreate, CampaignResponse
-from core import EmailChannel, SMSChannel, TelegramChannel
-from core.base import Contact as CoreContact
+from api.tasks import dispatch_campaign
 from typing import List
 
 router = APIRouter(prefix="/campaigns", tags=["Campanhas"])
@@ -43,7 +43,11 @@ def get_campaign(campaign_id: int, db: Session = Depends(get_db)):
 
 @router.post("/{campaign_id}/send", response_model=CampaignResponse)
 def send_campaign(campaign_id: int, db: Session = Depends(get_db)):
-    """Dispara uma campanha para todos os contatos."""
+    """
+    Enfileira a campanha para disparo assíncrono.
+    Responde imediatamente com status 'running'.
+    O Celery processa em background.
+    """
     campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
     if not campaign:
         raise HTTPException(status_code=404, detail="Campanha não encontrada")
@@ -55,45 +59,30 @@ def send_campaign(campaign_id: int, db: Session = Depends(get_db)):
     if not contacts:
         raise HTTPException(status_code=400, detail="Nenhum contato cadastrado")
 
+    # Serializa contatos para enviar ao Celery
+    contacts_data = [
+        {
+            "name": c.name,
+            "email": c.email,
+            "phone": c.phone,
+            "telegram_id": c.telegram_id
+        }
+        for c in contacts
+    ]
+
     # Atualiza status para running
     campaign.status = StatusEnum.running
     db.commit()
-
-    total = 0
-    success = 0
-    failed = 0
-
-    for contact in contacts:
-        # Disparo via Email
-        if campaign.use_email and contact.email:
-            core_contact = CoreContact(name=contact.name, destination=contact.email)
-            result = EmailChannel().send(core_contact, campaign.message)
-            total += 1
-            success += 1 if result.success else 0
-            failed += 1 if not result.success else 0
-
-        # Disparo via SMS
-        if campaign.use_sms and contact.phone:
-            core_contact = CoreContact(name=contact.name, destination=contact.phone)
-            result = SMSChannel().send(core_contact, campaign.message)
-            total += 1
-            success += 1 if result.success else 0
-            failed += 1 if not result.success else 0
-
-        # Disparo via Telegram
-        if campaign.use_telegram and contact.telegram_id:
-            core_contact = CoreContact(name=contact.name, destination=contact.telegram_id)
-            result = TelegramChannel().send(core_contact, campaign.message)
-            total += 1
-            success += 1 if result.success else 0
-            failed += 1 if not result.success else 0
-
-    # Atualiza métricas
-    campaign.total = total
-    campaign.success = success
-    campaign.failed = failed
-    campaign.status = StatusEnum.done
-    db.commit()
     db.refresh(campaign)
+
+    # Enfileira a tarefa no Celery — responde imediatamente
+    dispatch_campaign.delay(
+        campaign_id=campaign.id,
+        contacts=contacts_data,
+        message=campaign.message,
+        use_email=campaign.use_email,
+        use_sms=campaign.use_sms,
+        use_telegram=campaign.use_telegram
+    )
 
     return campaign
