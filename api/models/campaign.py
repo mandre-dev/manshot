@@ -23,6 +23,7 @@ class Campaign(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     message = Column(String, nullable=False)
+    image_url = Column(String, nullable=True)  # URL da imagem no ImgBB
 
     # Canais — o usuário escolhe um ou mais
     use_email = Column(Boolean, default=False)
