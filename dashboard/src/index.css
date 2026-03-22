@@ -9,7 +9,13 @@
 body {
   background: #0a0e1a;
   color: #d1d5db;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Space Mono', monospace;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Teko', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
 }
 
 ::-webkit-scrollbar {
@@ -21,6 +27,6 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1e2d4a;
+  background: #2a1a0a;
   border-radius: 2px;
 }
