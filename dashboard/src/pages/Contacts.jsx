@@ -5,7 +5,7 @@ import { getContacts, createContact, updateContact, deleteContact } from '../ser
 
 const inputStyle = {
   background: '#1a1208',
-  border: '1px solid #2a1a0a',
+  border: '2px solid #2a1a0a',
   borderRadius: '8px',
   padding: '10px 14px',
   color: '#e5e7eb',
@@ -30,7 +30,7 @@ function DropdownMenu({ contact, onEdit, onDelete }) {
   return (
     <div ref={ref} style={{ position: 'relative' }}>
       <button onClick={() => setOpen(!open)} style={{
-        background: 'transparent', border: '1px solid #2a1a0a',
+        background: 'transparent', border: '2px solid #2a1a0a',
         borderRadius: '6px', color: '#9ca3af', cursor: 'pointer',
         padding: '4px 10px', fontSize: '16px', lineHeight: '1',
         fontFamily: "'Space Mono', monospace",
@@ -39,7 +39,7 @@ function DropdownMenu({ contact, onEdit, onDelete }) {
       {open && (
         <div style={{
           position: 'absolute', right: 0, bottom: '110%',
-          background: '#111827', border: '1px solid #2a1a0a',
+          background: '#111827', border: '2px solid #2a1a0a',
           borderRadius: '8px', overflow: 'hidden', zIndex: 100,
           minWidth: '130px', boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
         }}>
@@ -124,7 +124,7 @@ export default function Contacts() {
       {/* Header */}
       <div style={{ marginBottom: '24px' }}>
         <div style={{ color: '#6b7280', fontSize: '12px', marginBottom: '4px', fontFamily: "'Space Mono', monospace" }}>Gerenciamento</div>
-        <h1>CONTATOS</h1>
+        <h1 style={{ color: '#fff', fontSize: '24px', fontWeight: '700', fontFamily: "'Fira Code', monospace" }}>Contatos</h1>
       </div>
 
       {/* Formulário */}
@@ -150,7 +150,7 @@ export default function Contacts() {
               fontWeight: '600', cursor: 'pointer', flex: 1,
               fontFamily: "'Space Mono', monospace",
             }}>
-              {editingId ? '✏️ Salvar alterações' : 'Adicionar contato'}
+              {editingId ? 'Salvar alterações' : 'Adicionar contato'}
             </button>
             {editingId && (
               <button type="button" onClick={() => {
@@ -158,7 +158,7 @@ export default function Contacts() {
                 setForm({ name: '', email: '', phone: '', telegram_id: '' })
               }} style={{
                 background: 'transparent', color: '#9ca3af',
-                border: '1px solid #2a1a0a', borderRadius: '8px',
+                border: '2px solid #2a1a0a', borderRadius: '8px',
                 padding: '10px 20px', fontSize: '13px', cursor: 'pointer',
                 fontFamily: "'Space Mono', monospace",
               }}>Cancelar</button>
@@ -168,8 +168,8 @@ export default function Contacts() {
       </div>
 
       {/* Tabela */}
-      <div style={{ background: '#111827', border: '1px solid #2a1a0a', borderRadius: '10px', overflow: 'visible' }}>
-        <div style={{ padding: '16px', borderBottom: '1px solid #2a1a0a' }}>
+      <div style={{ background: '#111827', border: '2px solid #2a1a0a', borderRadius: '10px', overflow: 'visible' }}>
+        <div style={{ padding: '16px', borderBottom: '2px solid #2a1a0a' }}>
           <span style={{ color: '#fff', fontSize: '14px', fontWeight: '600', fontFamily: "'Space Mono', monospace" }}>
             Lista de contatos
           </span>
@@ -178,7 +178,7 @@ export default function Contacts() {
           </span>
         </div>
 
-        <div style={{ display: 'flex', padding: '10px 16px', borderBottom: '1px solid #2a1a0a' }}>
+        <div style={{ display: 'flex', padding: '10px 16px', borderBottom: '2px solid #2a1a0a' }}>
           {['Nome', 'Email', 'Telefone', 'Telegram ID', ''].map(h => (
             <div key={h} style={{ flex: 1, color: '#4b5563', fontSize: '11px', fontWeight: '500', textTransform: 'uppercase', fontFamily: "'Space Mono', monospace" }}>{h}</div>
           ))}
@@ -189,7 +189,7 @@ export default function Contacts() {
         ) : contacts.map(c => (
           <div key={c.id} style={{
             display: 'flex', alignItems: 'center',
-            padding: '12px 16px', borderBottom: '1px solid #2a1a0a',
+            padding: '12px 16px', borderBottom: '2px solid #2a1a0a',
             transition: 'background 0.15s',
           }}
             onMouseEnter={e => e.currentTarget.style.background = '#1a1208'}

@@ -6,7 +6,7 @@ import { getCampaigns, getContacts } from '../services/api'
 const Card = ({ label, value, color = '#FF6B00' }) => (
   <div style={{
     background: '#111827',
-    border: '1px solid #2a1a0a',
+    border: '2px solid #2a1a0a',
     borderRadius: '10px',
     padding: '16px',
   }}>
@@ -68,9 +68,7 @@ export default function Dashboard() {
         <div style={{ color: '#6b7280', fontSize: '12px', marginBottom: '4px' }}>
           Bem-vindo de volta, Mandré
         </div>
-        <h1 style={{ color: '#fff', fontSize: '22px', fontWeight: '700' }}>
-          Painel de controle
-        </h1>
+        <div style={{ color: '#fff', fontSize: '22px', fontFamily: "'Fira Code', monospace", fontWeight: '700', letterSpacing: '0px' }}>PAINEL DE CONTROLE</div>
       </div>
 
       {/* Cards */}
@@ -82,12 +80,12 @@ export default function Dashboard() {
       </div>
 
       {/* Tabela */}
-      <div style={{ background: '#111827', border: '1px solid #2a1a0a', borderRadius: '10px', overflow: 'hidden' }}>
-        <div style={{ padding: '16px', borderBottom: '1px solid #2a1a0a' }}>
+      <div style={{ background: '#111827', border: '2px solid #2a1a0a', borderRadius: '10px', overflow: 'visible' }}>
+        <div style={{ padding: '16px', borderBottom: '2px solid #2a1a0a' }}>
           <span style={{ color: '#fff', fontSize: '14px', fontWeight: '600' }}>Campanhas recentes</span>
         </div>
 
-        <div style={{ display: 'flex', padding: '10px 16px', borderBottom: '1px solid #2a1a0a' }}>
+        <div style={{ display: 'flex', padding: '10px 16px', borderBottom: '2px solid #2a1a0a' }}>
           {['Campanha', 'Canais', 'Status', 'Total', 'Sucesso'].map(h => (
             <div key={h} style={{ flex: 1, color: '#4b5563', fontSize: '11px', fontWeight: '500', textTransform: 'uppercase' }}>{h}</div>
           ))}
@@ -97,7 +95,7 @@ export default function Dashboard() {
           <div key={c.id} style={{
             display: 'flex', alignItems: 'center',
             padding: '12px 16px',
-            borderBottom: '1px solid #2a1a0a',
+            borderBottom: '2px solid #2a1a0a',
             transition: 'background 0.15s',
           }}
             onMouseEnter={e => e.currentTarget.style.background = '#1a1208'}
