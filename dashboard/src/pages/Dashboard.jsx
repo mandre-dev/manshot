@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { getCampaigns, getContacts } from '../services/api'
+import { Mail, MessageSquare, Send } from 'lucide-react'
 
 const Card = ({ label, value, color = '#FF6B00' }) => (
   <div style={{
@@ -17,9 +18,9 @@ const Card = ({ label, value, color = '#FF6B00' }) => (
 
 const StatusPill = ({ status }) => {
   const colors = {
-    done:    { bg: '#064e3b', color: '#10b981' },
+    done: { bg: '#064e3b', color: '#10b981' },
     running: { bg: '#2a1a0a', color: '#FF8C00' },
-    failed:  { bg: '#4c1d24', color: '#f87171' },
+    failed: { bg: '#4c1d24', color: '#f87171' },
     pending: { bg: '#1f2937', color: '#9ca3af' },
   }
   const s = colors[status] || colors.pending
@@ -105,10 +106,10 @@ export default function Dashboard() {
               <div style={{ width: '3px', height: '20px', borderRadius: '2px', background: '#FF6B00' }} />
               <span style={{ color: '#e5e7eb', fontSize: '13px' }}>{c.name}</span>
             </div>
-            <div style={{ flex: 1, fontSize: '14px' }}>
-              {c.use_email && '📧 '}
-              {c.use_sms && '📱 '}
-              {c.use_telegram && '✈️'}
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {c.use_email && <Mail size={16} color="#FF6B00" />}
+              {c.use_sms && <MessageSquare size={16} color="#FF6B00" />}
+              {c.use_telegram && <Send size={16} color="#FF6B00" />}
             </div>
             <div style={{ flex: 1 }}><StatusPill status={c.status} /></div>
             <div style={{ flex: 1, color: '#9ca3af', fontSize: '13px' }}>{c.total}</div>
