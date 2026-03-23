@@ -203,7 +203,7 @@ export default function Campaigns() {
     <div>
       <div style={{ marginBottom: '24px' }}>
         <div style={{ color: '#6b7280', fontSize: '12px', marginBottom: '4px', fontFamily: "'Space Mono', monospace" }}>Gerenciamento</div>
-        <div style={{ color: '#fff', fontSize: '22px', fontFamily: "'Fira Code', monospace", fontWeight: '700', letterSpacing: '0px' }}>CAMPANHAS</div>
+        <div style={{ color: '#fff', fontSize: '22px', fontFamily: "'Fira Code', monospace", fontWeight: '700', letterSpacing: '1.0px' }}>CAMPANHAS</div>
       </div>
 
       {/* Formulário */}
