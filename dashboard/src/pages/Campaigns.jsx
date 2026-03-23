@@ -319,10 +319,10 @@ export default function Campaigns() {
                 <span style={{ color: '#4b5563', fontSize: '11px', fontFamily: "'Space Mono', monospace" }}>—</span>
               )}
             </div>
-            <div style={{ flex: 1, fontSize: '14px' }}>
-              {c.use_email && '📧 '}
-              {c.use_sms && '📱 '}
-              {c.use_telegram && '✈️'}
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {c.use_email && <Mail size={16} color="#FF6B00" />}
+              {c.use_sms && <MessageSquare size={16} color="#FF6B00" />}
+              {c.use_telegram && <Send size={16} color="#FF6B00" />}
             </div>
             <div style={{ flex: 1 }}><StatusPill status={c.status} /></div>
             <div style={{ flex: 1, color: '#9ca3af', fontSize: '13px', fontFamily: "'Space Mono', monospace" }}>{c.total}</div>
