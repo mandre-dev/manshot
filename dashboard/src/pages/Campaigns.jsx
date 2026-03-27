@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { getCampaigns, createCampaign, updateCampaign, deleteCampaign, sendCampaign, uploadImage } from '../services/api'
 import { Mail, MessageSquare, Send } from 'lucide-react'
+import RichEditor from '../components/RichEditor'
 
 
 const inputStyle = {

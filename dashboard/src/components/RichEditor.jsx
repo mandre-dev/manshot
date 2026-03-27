@@ -62,7 +62,7 @@ export default function RichEditor({ value, onChange }) {
         <button type="button"
           style={btnStyle(editor.isActive('bold'))}
           onClick={() => editor.chain().focus().toggleBold().run()}>
-          B
+          N
         </button>
         <button type="button"
           style={btnStyle(editor.isActive('italic'))}
@@ -70,8 +70,8 @@ export default function RichEditor({ value, onChange }) {
           I
         </button>
         <button type="button"
-          style={btnStyle(editor.isActive('strike'))}
-          onClick={() => editor.chain().focus().toggleStrike().run()}>
+          style={btnStyle(editor.isActive('underline'))}
+          onClick={() => editor.chain().focus().toggleUnderline().run()}>
           S
         </button>
         <div style={{ width: '1px', background: '#2a1a0a', margin: '0 4px' }} />
