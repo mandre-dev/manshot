@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { getCampaigns, getContacts } from '../services/api'
 import { Mail, MessageSquare, Send } from 'lucide-react'
 
+
 const Card = ({ label, value, color = '#FF6B00' }) => (
   <div style={{
     background: '#111827',
