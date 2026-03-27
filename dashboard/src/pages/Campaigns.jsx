@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { getCampaigns, createCampaign, updateCampaign, deleteCampaign, sendCampaign, uploadImage } from '../services/api'
 import { Mail, MessageSquare, Send } from 'lucide-react'
 
+
 const inputStyle = {
   background: '#1a1208',
   border: '2px solid #2a1a0a',
@@ -215,9 +216,10 @@ export default function Campaigns() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '14px' }}>
             <input style={inputStyle} placeholder="Nome da campanha *"
               value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
-            <textarea style={{ ...inputStyle, height: '80px', resize: 'none' }}
-              placeholder="Mensagem — use {name} para personalizar"
-              value={form.message} onChange={e => setForm({ ...form, message: e.target.value })} required />
+            <RichEditor
+              value={form.message}
+              onChange={(html) => setForm({ ...form, message: html })}
+            />
 
             {/* Upload */}
             <div style={{ border: '1px dashed #2a1a0a', borderRadius: '8px', padding: '16px', textAlign: 'center' }}>
