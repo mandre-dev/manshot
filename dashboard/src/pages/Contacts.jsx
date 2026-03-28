@@ -212,7 +212,7 @@ export default function Contacts() {
             </span>
           </div>
           <div>
-            <input type="file" accept=".xlsx,.xls,.csv" onChange={handleImportExcel}
+            <input type="file" accept=".xlsx,.xls,.csv,.ods" onChange={handleImportExcel}
               style={{ display: 'none' }} id="excel-upload" />
             <label htmlFor="excel-upload" style={{
               background: '#FF6B0022', color: '#FF6B00',
