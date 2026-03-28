@@ -8,9 +8,9 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    # --- SendGrid (Email) ---
-    SENDGRID_API_KEY: str = ""
-    EMAIL_FROM: str = ""
+    # --- Gmail SMTP (Email) ---
+    GMAIL_USER: str = ""
+    GMAIL_APP_PASSWORD: str = ""
     EMAIL_FROM_NAME: str = "Manshot"
 
     # --- Vonage (SMS) ---
@@ -24,11 +24,12 @@ class Settings(BaseSettings):
     # --- Redis (Celery) ---
     REDIS_URL: str = ""
 
+    # --- ImgBB (upload de imagens) ---
+    IMGBB_API_KEY: str = ""
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
 
-    # --- ImgBB (upload de imagens) ---
-    IMGBB_API_KEY: str = ""
 
 settings = Settings()
