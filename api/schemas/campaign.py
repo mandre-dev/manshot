@@ -12,6 +12,7 @@ from api.models.campaign import StatusEnum
 class CampaignCreate(BaseModel):
     """Dados necessários para criar uma campanha."""
     name: str
+    email_subject: Optional[str] = None
     message: str
     image_url: Optional[str] = None
     use_email: bool = False
@@ -23,6 +24,7 @@ class CampaignResponse(BaseModel):
     """Dados retornados pela API ao consultar uma campanha."""
     id: int
     name: str
+    email_subject: Optional[str] = None
     message: str
     image_url: Optional[str] = None
     use_email: bool

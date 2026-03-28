@@ -14,3 +14,4 @@ sqlalchemy==2.0.29
 # Fila assíncrona (Fase 4)
 celery==5.3.6
 redis==5.0.3
+alembic==1.13.1

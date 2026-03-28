@@ -119,7 +119,7 @@ export default function Campaigns() {
   const [imagePreview, setImagePreview] = useState(null)
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState({
-    name: '', message: '', image_url: null,
+    name: '', message: '', image_url: null, email_subject: '',
     use_email: false, use_sms: false, use_telegram: false,
   })
   const [contacts, setContacts] = useState([])
@@ -181,7 +181,7 @@ export default function Campaigns() {
       } else {
         await createCampaign(form)
       }
-      setForm({ name: '', message: '', image_url: null, use_email: false, use_sms: false, use_telegram: false })
+      setForm({ name: '', message: '', image_url: null, email_subject: '', use_email: false, use_sms: false, use_telegram: false })
       setImagePreview(null)
       load()
     } catch (err) {
@@ -195,6 +195,7 @@ export default function Campaigns() {
       name: campaign.name,
       message: campaign.message,
       image_url: campaign.image_url,
+      email_subject: campaign.email_subject || '',
       use_email: campaign.use_email,
       use_sms: campaign.use_sms,
       use_telegram: campaign.use_telegram,
@@ -266,10 +267,21 @@ export default function Campaigns() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '14px' }}>
             <input style={inputStyle} placeholder="Nome da campanha *"
               value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
+
             <RichEditor
               value={form.message}
               onChange={(html) => setForm({ ...form, message: html })}
             />
+
+            {/* Campo de assunto — aparece só quando Email estiver marcado */}
+            {form.use_email && (
+              <input
+                style={inputStyle}
+                placeholder="Assunto do e-mail (opcional)"
+                value={form.email_subject}
+                onChange={e => setForm({ ...form, email_subject: e.target.value })}
+              />
+            )}
 
             {/* Upload */}
             <div style={{ border: '1px dashed #2a1a0a', borderRadius: '8px', padding: '16px', textAlign: 'center' }}>
@@ -323,7 +335,7 @@ export default function Campaigns() {
             {editingId && (
               <button type="button" onClick={() => {
                 setEditingId(null)
-                setForm({ name: '', message: '', image_url: null, use_email: false, use_sms: false, use_telegram: false })
+                setForm({ name: '', message: '', image_url: null, email_subject: '', use_email: false, use_sms: false, use_telegram: false })
                 setImagePreview(null)
               }} style={{
                 background: 'transparent', color: '#9ca3af',
