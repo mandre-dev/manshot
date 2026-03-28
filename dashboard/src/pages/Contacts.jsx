@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { getContacts, createContact, updateContact, deleteContact } from '../services/api'
+import * as XLSX from 'xlsx'
 
 const inputStyle = {
   background: '#1a1208',
@@ -119,6 +120,38 @@ export default function Contacts() {
     load()
   }
 
+  async function handleImportExcel(e) {
+    const file = e.target.files[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = async (evt) => {
+      const data = new Uint8Array(evt.target.result)
+      const workbook = XLSX.read(data, { type: 'array' })
+      const sheet = workbook.Sheets[workbook.SheetNames[0]]
+      const rows = XLSX.utils.sheet_to_json(sheet)
+
+      let imported = 0
+      for (const row of rows) {
+        try {
+          await createContact({
+            name: row.name || row.nome || row.Name || '',
+            email: row.email || row.Email || '',
+            phone: row.phone || row.telefone || row.Phone || '',
+            telegram_id: row.telegram_id || row.telegram || '',
+          })
+          imported++
+        } catch (err) {
+          console.error('Erro ao importar contato:', err)
+        }
+      }
+
+      alert(`${imported} contatos importados com sucesso!`)
+      load()
+    }
+    reader.readAsArrayBuffer(file)
+  }
+
   return (
     <div>
       {/* Header */}
@@ -169,13 +202,27 @@ export default function Contacts() {
 
       {/* Tabela */}
       <div style={{ background: '#111827', border: '2px solid #2a1a0a', borderRadius: '10px', overflow: 'visible' }}>
-        <div style={{ padding: '16px', borderBottom: '2px solid #2a1a0a' }}>
-          <span style={{ color: '#fff', fontSize: '14px', fontWeight: '600', fontFamily: "'Space Mono', monospace" }}>
-            Lista de contatos
-          </span>
-          <span style={{ color: '#6b7280', fontSize: '12px', marginLeft: '8px', fontFamily: "'Space Mono', monospace" }}>
-            ({contacts.length} total)
-          </span>
+        <div style={{ padding: '16px', borderBottom: '1px solid #2a1a0a', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <span style={{ color: '#fff', fontSize: '14px', fontWeight: '600', fontFamily: "'Space Mono', monospace" }}>
+              Lista de contatos
+            </span>
+            <span style={{ color: '#6b7280', fontSize: '12px', marginLeft: '8px', fontFamily: "'Space Mono', monospace" }}>
+              ({contacts.length} total)
+            </span>
+          </div>
+          <div>
+            <input type="file" accept=".xlsx,.xls,.csv" onChange={handleImportExcel}
+              style={{ display: 'none' }} id="excel-upload" />
+            <label htmlFor="excel-upload" style={{
+              background: '#FF6B0022', color: '#FF6B00',
+              border: '1px solid #FF6B0044', borderRadius: '6px',
+              padding: '6px 14px', fontSize: '11px', cursor: 'pointer',
+              fontFamily: "'Space Mono', monospace",
+            }}>
+              📥 Importar Excel
+            </label>
+          </div>
         </div>
 
         <div style={{ display: 'flex', padding: '10px 16px', borderBottom: '2px solid #2a1a0a' }}>
