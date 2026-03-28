@@ -30,11 +30,11 @@ celery_app.conf.update(
 @celery_app.task(bind=True, max_retries=3)
 def dispatch_campaign(self, campaign_id: int, contacts: list, message: str,
                       use_email: bool, use_sms: bool, use_telegram: bool,
-                      image_url: str = None):
+                      image_url: str = None, email_subject: str = None):
     """
     Tarefa principal de disparo.
     Processa todos os contatos em background.
-    Suporta envio de imagem via ImgBB.
+    Suporta envio de imagem via ImgBB e assunto personalizado no email.
     """
     from api.database import SessionLocal
     from api.models.campaign import Campaign, StatusEnum
@@ -51,7 +51,7 @@ def dispatch_campaign(self, campaign_id: int, contacts: list, message: str,
             # Disparo via Email
             if use_email and contact.get("email"):
                 core_contact = CoreContact(name=name, destination=contact["email"])
-                result = EmailChannel().send(core_contact, message, image_url=image_url)
+                result = EmailChannel().send(core_contact, message, image_url=image_url, subject=email_subject)
                 total += 1
                 success += 1 if result.success else 0
                 failed += 1 if not result.success else 0
