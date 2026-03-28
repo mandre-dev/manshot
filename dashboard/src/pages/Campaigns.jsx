@@ -1,7 +1,7 @@
 // Campaigns.jsx — Manshot Orange Theme + Image Upload + Menu
 
 import { useEffect, useState, useRef } from 'react'
-import { getCampaigns, createCampaign, updateCampaign, deleteCampaign, sendCampaign, uploadImage } from '../services/api'
+import { getCampaigns, createCampaign, updateCampaign, deleteCampaign, sendCampaign, uploadImage, getContacts } from '../services/api'
 import { Mail, MessageSquare, Send } from 'lucide-react'
 import RichEditor from '../components/RichEditor'
 
@@ -122,6 +122,11 @@ export default function Campaigns() {
     name: '', message: '', image_url: null,
     use_email: false, use_sms: false, use_telegram: false,
   })
+  const [contacts, setContacts] = useState([])
+  const [loadingContacts, setLoadingContacts] = useState(false)
+  const [showSelectContacts, setShowSelectContacts] = useState(false)
+  const [selectedContacts, setSelectedContacts] = useState(new Set())
+  const [campaignToSend, setCampaignToSend] = useState(null)
 
   async function load() {
     try {
@@ -134,7 +139,23 @@ export default function Campaigns() {
     }
   }
 
-  useEffect(() => { load() }, [])
+  async function loadContacts() {
+    try {
+      setLoadingContacts(true)
+      const res = await getContacts()
+      setContacts(res.data)
+      setSelectedContacts(new Set(res.data.map(c => c.id)))
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoadingContacts(false)
+    }
+  }
+
+  useEffect(() => {
+    load()
+    loadContacts()
+  }, [])
 
   async function handleImageUpload(e) {
     const file = e.target.files[0]
@@ -190,14 +211,42 @@ export default function Campaigns() {
 
   async function handleSend(id) {
     if (!confirm('Disparar campanha agora?')) return
-    setSending(id)
+    setCampaignToSend(id)
+    setShowSelectContacts(true)
+  }
+
+  async function confirmSendWithContacts() {
+    if (!campaignToSend) return
+
+    setSending(campaignToSend)
     try {
-      await sendCampaign(id)
+      const contactIdArray = Array.from(selectedContacts)
+      await sendCampaign(campaignToSend, contactIdArray.length > 0 ? contactIdArray : null)
       load()
+      setShowSelectContacts(false)
+      setCampaignToSend(null)
     } catch (err) {
       console.error(err)
     } finally {
       setSending(null)
+    }
+  }
+
+  function toggleContact(contactId) {
+    const newSelected = new Set(selectedContacts)
+    if (newSelected.has(contactId)) {
+      newSelected.delete(contactId)
+    } else {
+      newSelected.add(contactId)
+    }
+    setSelectedContacts(newSelected)
+  }
+
+  function toggleAllContacts() {
+    if (selectedContacts.size === contacts.length) {
+      setSelectedContacts(new Set())
+    } else {
+      setSelectedContacts(new Set(contacts.map(c => c.id)))
     }
   }
 
@@ -350,6 +399,97 @@ export default function Campaigns() {
           </div>
         ))}
       </div>
+
+      {/* Modal de seleção de contatos */}
+      {showSelectContacts && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0, 0, 0, 0.7)', display: 'flex',
+          alignItems: 'center', justifyContent: 'center', zIndex: 1000
+        }}>
+          <div style={{
+            background: '#111827', border: '2px solid #2a1a0a',
+            borderRadius: '10px', padding: '24px', maxWidth: '500px',
+            maxHeight: '70vh', overflowY: 'auto', width: '90%'
+          }}>
+            <div style={{ color: '#FF6B00', fontSize: '14px', fontWeight: '600', marginBottom: '16px', textTransform: 'uppercase', fontFamily: "'Space Mono', monospace" }}>
+              Selecionar contatos para disparar
+            </div>
+
+            <div style={{ marginBottom: '16px', paddingBottom: '12px', borderBottom: '2px solid #2a1a0a' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={selectedContacts.size === contacts.length && contacts.length > 0}
+                  onChange={toggleAllContacts}
+                  style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                />
+                <span style={{ color: '#e5e7eb', fontSize: '13px', fontFamily: "'Space Mono', monospace" }}>
+                  Selecionar todos ({contacts.length})
+                </span>
+              </label>
+            </div>
+
+            {loadingContacts ? (
+              <div style={{ textAlign: 'center', color: '#FF6B00', padding: '16px', fontFamily: "'Space Mono', monospace" }}>
+                Carregando contatos...
+              </div>
+            ) : contacts.length === 0 ? (
+              <div style={{ textAlign: 'center', color: '#6b7280', padding: '16px', fontFamily: "'Space Mono', monospace" }}>
+                Nenhum contato cadastrado
+              </div>
+            ) : (
+              <div style={{ marginBottom: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {contacts.map(contact => (
+                  <label key={contact.id} style={{
+                    display: 'flex', alignItems: 'center', gap: '8px',
+                    cursor: 'pointer', padding: '8px', borderRadius: '6px',
+                    background: selectedContacts.has(contact.id) ? '#2a1a0a' : 'transparent',
+                    transition: 'background 0.15s'
+                  }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#2a1a0a'}
+                    onMouseLeave={e => e.currentTarget.style.background = selectedContacts.has(contact.id) ? '#2a1a0a' : 'transparent'}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedContacts.has(contact.id)}
+                      onChange={() => toggleContact(contact.id)}
+                      style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ color: '#e5e7eb', fontSize: '13px', fontFamily: "'Space Mono', monospace" }}>
+                        {contact.name}
+                      </div>
+                      <div style={{ color: '#6b7280', fontSize: '11px', fontFamily: "'Space Mono', monospace" }}>
+                        {contact.email || contact.phone || contact.telegram_id || '—'}
+                      </div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '8px', marginTop: '20px' }}>
+              <button onClick={confirmSendWithContacts} style={{
+                background: '#FF6B00', color: '#fff', border: 'none',
+                borderRadius: '8px', padding: '10px 16px', fontSize: '13px',
+                fontWeight: '600', cursor: 'pointer', flex: 1,
+                fontFamily: "'Space Mono', monospace"
+              }}>
+                ▶ Disparar ({selectedContacts.size})
+              </button>
+              <button onClick={() => setShowSelectContacts(false)} style={{
+                background: 'transparent', color: '#9ca3af',
+                border: '2px solid #2a1a0a', borderRadius: '8px',
+                padding: '10px 16px', fontSize: '13px', cursor: 'pointer',
+                fontFamily: "'Space Mono', monospace"
+              }}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

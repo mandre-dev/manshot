@@ -42,11 +42,16 @@ def get_campaign(campaign_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/{campaign_id}/send", response_model=CampaignResponse)
-def send_campaign(campaign_id: int, db: Session = Depends(get_db)):
+def send_campaign(
+    campaign_id: int, contact_ids: dict = None, db: Session = Depends(get_db)
+):
     """
     Enfileira a campanha para disparo assíncrono.
     Responde imediatamente com status 'running'.
     O Celery processa em background com suporte a imagem.
+
+    Se contact_ids for fornecido, usa apenas esses contatos.
+    Caso contrário, usa todos os contatos.
     """
     campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
     if not campaign:
@@ -55,16 +60,21 @@ def send_campaign(campaign_id: int, db: Session = Depends(get_db)):
     if campaign.status == StatusEnum.running:
         raise HTTPException(status_code=400, detail="Campanha já está em execução")
 
-    contacts = db.query(Contact).all()
+    # Se contact_ids foi fornecido, usa apenas esses contatos
+    if contact_ids and "ids" in contact_ids:
+        contacts = db.query(Contact).filter(Contact.id.in_(contact_ids["ids"])).all()
+    else:
+        contacts = db.query(Contact).all()
+
     if not contacts:
-        raise HTTPException(status_code=400, detail="Nenhum contato cadastrado")
+        raise HTTPException(status_code=400, detail="Nenhum contato selecionado")
 
     contacts_data = [
         {
             "name": c.name,
             "email": c.email,
             "phone": c.phone,
-            "telegram_id": c.telegram_id
+            "telegram_id": c.telegram_id,
         }
         for c in contacts
     ]
@@ -80,7 +90,7 @@ def send_campaign(campaign_id: int, db: Session = Depends(get_db)):
         use_email=campaign.use_email,
         use_sms=campaign.use_sms,
         use_telegram=campaign.use_telegram,
-        image_url=campaign.image_url
+        image_url=campaign.image_url,
     )
 
     return campaign
@@ -98,7 +108,9 @@ def delete_campaign(campaign_id: int, db: Session = Depends(get_db)):
 
 
 @router.put("/{campaign_id}", response_model=CampaignResponse)
-def update_campaign(campaign_id: int, data: CampaignCreate, db: Session = Depends(get_db)):
+def update_campaign(
+    campaign_id: int, data: CampaignCreate, db: Session = Depends(get_db)
+):
     """Atualiza uma campanha."""
     campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
     if not campaign:
