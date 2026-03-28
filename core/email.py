@@ -1,11 +1,12 @@
 """
 email.py — Manshot
-Canal de disparo via Email usando SendGrid.
+Canal de disparo via Email usando Gmail SMTP.
 Suporta personalização de mensagem e envio de imagem.
 """
 
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail, Content
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 from .base import BaseChannel, Contact, DispatchResult
 from .config import settings
@@ -13,50 +14,46 @@ from .config import settings
 
 class EmailChannel(BaseChannel):
     """
-    Disparo de emails em massa via SendGrid.
-    Plano gratuito: até 100 emails/dia.
+    Disparo de emails em massa via Gmail SMTP.
+    Plano gratuito: até 500 emails/dia.
+    Requer uma conta Gmail com App Password habilitado.
     """
 
-    def __init__(self):
-        self.client = SendGridAPIClient(settings.SENDGRID_API_KEY)
+    def _get_connection(self) -> smtplib.SMTP_SSL:
+        """Cria e retorna uma conexão autenticada com o Gmail SMTP."""
+        conn = smtplib.SMTP_SSL("smtp.gmail.com", 465)
+        conn.login(settings.GMAIL_USER, settings.GMAIL_APP_PASSWORD)
+        return conn
 
     def send(self, contact: Contact, message: str, image_url: str = None) -> DispatchResult:
         """
-        Envia email para um contato.
+        Envia email para um contato via Gmail SMTP.
         Se image_url for fornecida, incorpora a imagem no corpo do email em HTML.
         A mensagem suporta variáveis: use {name} para personalizar.
         """
         try:
             personalized_message = message.format(name=contact.name)
 
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = f"Mensagem de {settings.EMAIL_FROM_NAME}"
+            msg["From"]    = f"{settings.EMAIL_FROM_NAME} <{settings.GMAIL_USER}>"
+            msg["To"]      = contact.destination
+
             if image_url:
-                # Email com imagem em HTML
-                html_content = f"""
+                html_body = f"""
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                     <img src="{image_url}" style="width: 100%; border-radius: 8px; margin-bottom: 16px;" />
                     <p style="font-size: 16px; color: #333; line-height: 1.6;">{personalized_message}</p>
-                    <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
-                    <p style="font-size: 12px; color: #999;">Enviado via Manshot</p>
                 </div>
                 """
-                mail = Mail(
-                    from_email=(settings.EMAIL_FROM, settings.EMAIL_FROM_NAME),
-                    to_emails=contact.destination,
-                    subject=f"Mensagem de {settings.EMAIL_FROM_NAME}",
-                    html_content=html_content
-                )
+                msg.attach(MIMEText(html_body, "html"))
             else:
-                # Email só texto
-                mail = Mail(
-                    from_email=(settings.EMAIL_FROM, settings.EMAIL_FROM_NAME),
-                    to_emails=contact.destination,
-                    subject=f"Mensagem de {settings.EMAIL_FROM_NAME}",
-                    plain_text_content=personalized_message
-                )
+                msg.attach(MIMEText(personalized_message, "plain"))
 
-            response = self.client.send(mail)
-            success = response.status_code == 202
-            return DispatchResult(contact=contact, success=success)
+            with self._get_connection() as conn:
+                conn.sendmail(settings.GMAIL_USER, contact.destination, msg.as_string())
+
+            return DispatchResult(contact=contact, success=True)
 
         except Exception as e:
             return DispatchResult(contact=contact, success=False, error=str(e))
