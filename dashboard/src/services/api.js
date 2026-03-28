@@ -17,7 +17,10 @@ export const getCampaigns = () => api.get('/campaigns/')
 export const createCampaign = (data) => api.post('/campaigns/', data)
 export const updateCampaign = (id, data) => api.put(`/campaigns/${id}`, data)
 export const deleteCampaign = (id) => api.delete(`/campaigns/${id}`)
-export const sendCampaign = (id) => api.post(`/campaigns/${id}/send`)
+export const sendCampaign = (id, contactIds = null) => {
+  const payload = contactIds ? { ids: contactIds } : null
+  return api.post(`/campaigns/${id}/send`, payload)
+}
 
 // ── Upload ──────────────────────────────────────────
 export const uploadImage = (file) => {
