@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { getCampaigns, createCampaign, updateCampaign, deleteCampaign, sendCampaign, uploadImage, getContacts } from '../services/api'
-import { Mail, MessageSquare, Send } from 'lucide-react'
+import { Mail, MessageSquare, Send, CheckCircle } from 'lucide-react'
 import RichEditor from '../components/RichEditor'
 
 
@@ -111,10 +111,62 @@ function DropdownMenu({ campaign, onEdit, onDelete }) {
   )
 }
 
+// Modal de loading / sucesso
+function SendingModal({ status }) {
+  return (
+    <div style={{
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+      background: 'rgba(0,0,0,0.8)', display: 'flex',
+      alignItems: 'center', justifyContent: 'center', zIndex: 2000
+    }}>
+      <div style={{
+        background: '#111827', border: '2px solid #2a1a0a',
+        borderRadius: '16px', padding: '48px 40px',
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', gap: '20px', minWidth: '260px'
+      }}>
+        {status === 'loading' ? (
+          <>
+            <div style={{
+              width: '56px', height: '56px', borderRadius: '50%',
+              border: '4px solid #2a1a0a',
+              borderTop: '4px solid #FF6B00',
+              animation: 'spin 0.8s linear infinite',
+            }} />
+            <div style={{ color: '#e5e7eb', fontSize: '14px', fontFamily: "'Space Mono', monospace", textAlign: 'center' }}>
+              Disparando campanha...
+            </div>
+            <div style={{ color: '#6b7280', fontSize: '11px', fontFamily: "'Space Mono', monospace", textAlign: 'center' }}>
+              Isso pode levar alguns segundos...
+            </div>
+          </>
+        ) : (
+          <>
+            <CheckCircle size={56} color="#10b981" strokeWidth={1.5} />
+            <div style={{ color: '#e5e7eb', fontSize: '14px', fontFamily: "'Space Mono', monospace", textAlign: 'center' }}>
+              Campanha disparada!
+            </div>
+            <div style={{ color: '#6b7280', fontSize: '11px', fontFamily: "'Space Mono', monospace", textAlign: 'center' }}>
+              Mensagens enviadas com sucesso!
+            </div>
+          </>
+        )}
+      </div>
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
+    </div>
+  )
+}
+
 export default function Campaigns() {
   const [campaigns, setCampaigns] = useState([])
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(null)
+  const [sendingModalStatus, setSendingModalStatus] = useState(null) // null | 'loading' | 'success'
   const [uploading, setUploading] = useState(false)
   const [imagePreview, setImagePreview] = useState(null)
   const [editingId, setEditingId] = useState(null)
@@ -219,15 +271,22 @@ export default function Campaigns() {
   async function confirmSendWithContacts() {
     if (!campaignToSend) return
 
+    setShowSelectContacts(false)
     setSending(campaignToSend)
+    setSendingModalStatus('loading')
+
     try {
       const contactIdArray = Array.from(selectedContacts)
       await sendCampaign(campaignToSend, contactIdArray.length > 0 ? contactIdArray : null)
       load()
-      setShowSelectContacts(false)
-      setCampaignToSend(null)
+      setSendingModalStatus('success')
+      setTimeout(() => {
+        setSendingModalStatus(null)
+        setCampaignToSend(null)
+      }, 2500)
     } catch (err) {
       console.error(err)
+      setSendingModalStatus(null)
     } finally {
       setSending(null)
     }
@@ -253,6 +312,9 @@ export default function Campaigns() {
 
   return (
     <div>
+      {/* Modal de loading/sucesso */}
+      {sendingModalStatus && <SendingModal status={sendingModalStatus} />}
+
       <div style={{ marginBottom: '24px' }}>
         <div style={{ color: '#6b7280', fontSize: '12px', marginBottom: '4px', fontFamily: "'Space Mono', monospace" }}>Gerenciamento</div>
         <div style={{ color: '#fff', fontSize: '22px', fontFamily: "'Fira Code', monospace", fontWeight: '700', letterSpacing: '1.0px' }}>CAMPANHAS</div>
@@ -273,7 +335,6 @@ export default function Campaigns() {
               onChange={(html) => setForm({ ...form, message: html })}
             />
 
-            {/* Campo de assunto — aparece só quando Email estiver marcado */}
             {form.use_email && (
               <input
                 style={inputStyle}
@@ -402,7 +463,7 @@ export default function Campaigns() {
                   transition: 'all 0.2s', opacity: c.status === 'running' ? 0.5 : 1,
                   fontFamily: "'Space Mono', monospace"
                 }}>
-                {sending === c.id ? 'Disparando...' : '▶ Disparar'}
+                {sending === c.id ? '...' : '▶ Disparar'}
               </button>
             </div>
             <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
