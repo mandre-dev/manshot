@@ -3,7 +3,7 @@
 
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 const btnStyle = (active) => ({
   background: active ? '#FF6B0033' : '#1a1208',
@@ -18,11 +18,15 @@ const btnStyle = (active) => ({
   transition: 'all 0.15s',
 })
 
-export default function RichEditor({ value, onChange }) {
+export default function RichEditor({ value, onChange, placeholder = 'Digite sua mensagem...' }) {
+  const [isEmpty, setIsEmpty] = useState(true)
+  const getEditorIsEmpty = (editorInstance) => !editorInstance || editorInstance.getText().trim().length === 0
+
   const editor = useEditor({
     extensions: [StarterKit],
     content: value || '',
     onUpdate({ editor }) {
+      setIsEmpty(getEditorIsEmpty(editor))
       onChange(editor.getHTML())
     },
     editorProps: {
@@ -47,7 +51,16 @@ export default function RichEditor({ value, onChange }) {
     if (editor && value === '') {
       editor.commands.clearContent()
     }
-  }, [value])
+    if (editor) {
+      setIsEmpty(getEditorIsEmpty(editor))
+    }
+  }, [editor, value])
+
+  useEffect(() => {
+    if (editor) {
+      setIsEmpty(getEditorIsEmpty(editor))
+    }
+  }, [editor])
 
   if (!editor) return null
 
@@ -83,7 +96,24 @@ export default function RichEditor({ value, onChange }) {
       </div>
 
       {/* Editor */}
-      <EditorContent editor={editor} />
+      <div style={{ position: 'relative' }}>
+        {isEmpty && (
+          <div style={{
+            position: 'absolute',
+            top: '12px',
+            left: '14px',
+            zIndex: 1,
+            color: '#6b7280',
+            fontSize: '13px',
+            fontFamily: "'Space Mono', monospace",
+            pointerEvents: 'none',
+            userSelect: 'none',
+          }}>
+            {placeholder}
+          </div>
+        )}
+        <EditorContent editor={editor} />
+      </div>
     </div>
   )
 }

@@ -333,6 +333,7 @@ export default function Campaigns() {
             <RichEditor
               value={form.message}
               onChange={(html) => setForm({ ...form, message: html })}
+              placeholder="Mensagem da campanha *"
             />
 
             {form.use_email && (
