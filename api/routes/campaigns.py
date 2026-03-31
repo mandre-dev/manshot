@@ -92,6 +92,7 @@ def send_campaign(
         use_telegram=campaign.use_telegram,
         image_url=campaign.image_url,
         email_subject=campaign.email_subject,
+        sms_from=campaign.sms_from,
     )
 
     return campaign

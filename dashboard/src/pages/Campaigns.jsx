@@ -171,7 +171,7 @@ export default function Campaigns() {
   const [imagePreview, setImagePreview] = useState(null)
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState({
-    name: '', message: '', image_url: null, email_subject: '',
+    name: '', message: '', image_url: null, email_subject: '', sms_from: '',
     use_email: false, use_sms: false, use_telegram: false,
   })
   const [contacts, setContacts] = useState([])
@@ -233,7 +233,7 @@ export default function Campaigns() {
       } else {
         await createCampaign(form)
       }
-      setForm({ name: '', message: '', image_url: null, email_subject: '', use_email: false, use_sms: false, use_telegram: false })
+      setForm({ name: '', message: '', image_url: null, email_subject: '', sms_from: '', use_email: false, use_sms: false, use_telegram: false })
       setImagePreview(null)
       load()
     } catch (err) {
@@ -248,6 +248,7 @@ export default function Campaigns() {
       message: campaign.message,
       image_url: campaign.image_url,
       email_subject: campaign.email_subject || '',
+      sms_from: campaign.sms_from || '',
       use_email: campaign.use_email,
       use_sms: campaign.use_sms,
       use_telegram: campaign.use_telegram,
@@ -345,6 +346,15 @@ export default function Campaigns() {
               />
             )}
 
+            {form.use_sms && (
+              <input
+                style={inputStyle}
+                placeholder="Remetente do SMS (opcional)"
+                value={form.sms_from}
+                onChange={e => setForm({ ...form, sms_from: e.target.value })}
+              />
+            )}
+
             {/* Upload */}
             <div style={{ border: '1px dashed #2a1a0a', borderRadius: '8px', padding: '16px', textAlign: 'center' }}>
               {imagePreview ? (
@@ -397,7 +407,7 @@ export default function Campaigns() {
             {editingId && (
               <button type="button" onClick={() => {
                 setEditingId(null)
-                setForm({ name: '', message: '', image_url: null, email_subject: '', use_email: false, use_sms: false, use_telegram: false })
+                setForm({ name: '', message: '', image_url: null, email_subject: '', sms_from: '', use_email: false, use_sms: false, use_telegram: false })
                 setImagePreview(null)
               }} style={{
                 background: 'transparent', color: '#9ca3af',
