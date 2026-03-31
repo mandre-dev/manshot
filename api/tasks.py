@@ -35,6 +35,7 @@ def dispatch_campaign(
     image_url: str = None,
     email_subject: str = None,
     sms_from: str = None,
+    telegram_signature: str = None,
 ):
     """
     Tarefa principal de disparo.
@@ -86,7 +87,10 @@ def dispatch_campaign(
                     name=name, destination=contact["telegram_id"]
                 )
                 result = TelegramChannel().send(
-                    core_contact, message, image_url=image_url
+                    core_contact,
+                    message,
+                    image_url=image_url,
+                    signature=telegram_signature,
                 )
                 total += 1
                 success += 1 if result.success else 0

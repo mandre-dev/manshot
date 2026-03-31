@@ -15,6 +15,7 @@ class CampaignCreate(BaseModel):
     name: str
     email_subject: Optional[str] = None
     sms_from: Optional[str] = None
+    telegram_signature: Optional[str] = None
     message: str
     image_url: Optional[str] = None
     use_email: bool = False
@@ -29,6 +30,7 @@ class CampaignResponse(BaseModel):
     name: str
     email_subject: Optional[str] = None
     sms_from: Optional[str] = None
+    telegram_signature: Optional[str] = None
     message: str
     image_url: Optional[str] = None
     use_email: bool

@@ -171,7 +171,7 @@ export default function Campaigns() {
   const [imagePreview, setImagePreview] = useState(null)
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState({
-    name: '', message: '', image_url: null, email_subject: '', sms_from: '',
+    name: '', message: '', image_url: null, email_subject: '', sms_from: '', telegram_signature: '',
     use_email: false, use_sms: false, use_telegram: false,
   })
   const [contacts, setContacts] = useState([])
@@ -233,7 +233,7 @@ export default function Campaigns() {
       } else {
         await createCampaign(form)
       }
-      setForm({ name: '', message: '', image_url: null, email_subject: '', sms_from: '', use_email: false, use_sms: false, use_telegram: false })
+      setForm({ name: '', message: '', image_url: null, email_subject: '', sms_from: '', telegram_signature: '', use_email: false, use_sms: false, use_telegram: false })
       setImagePreview(null)
       load()
     } catch (err) {
@@ -249,6 +249,7 @@ export default function Campaigns() {
       image_url: campaign.image_url,
       email_subject: campaign.email_subject || '',
       sms_from: campaign.sms_from || '',
+      telegram_signature: campaign.telegram_signature || '',
       use_email: campaign.use_email,
       use_sms: campaign.use_sms,
       use_telegram: campaign.use_telegram,
@@ -355,6 +356,15 @@ export default function Campaigns() {
               />
             )}
 
+            {form.use_telegram && (
+              <input
+                style={inputStyle}
+                placeholder="Assinatura do Telegram (opcional)"
+                value={form.telegram_signature}
+                onChange={e => setForm({ ...form, telegram_signature: e.target.value })}
+              />
+            )}
+
             {/* Upload */}
             <div style={{ border: '1px dashed #2a1a0a', borderRadius: '8px', padding: '16px', textAlign: 'center' }}>
               {imagePreview ? (
@@ -407,7 +417,7 @@ export default function Campaigns() {
             {editingId && (
               <button type="button" onClick={() => {
                 setEditingId(null)
-                setForm({ name: '', message: '', image_url: null, email_subject: '', sms_from: '', use_email: false, use_sms: false, use_telegram: false })
+                setForm({ name: '', message: '', image_url: null, email_subject: '', sms_from: '', telegram_signature: '', use_email: false, use_sms: false, use_telegram: false })
                 setImagePreview(null)
               }} style={{
                 background: 'transparent', color: '#9ca3af',
