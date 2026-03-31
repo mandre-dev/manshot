@@ -12,11 +12,7 @@ from core.base import Contact as CoreContact
 from core.config import settings
 
 # Configura o Celery com Redis como broker
-celery_app = Celery(
-    "manshot",
-    broker=settings.REDIS_URL,
-    backend=settings.REDIS_URL
-)
+celery_app = Celery("manshot", broker=settings.REDIS_URL, backend=settings.REDIS_URL)
 
 celery_app.conf.update(
     task_serializer="json",
@@ -28,9 +24,17 @@ celery_app.conf.update(
 
 
 @celery_app.task(bind=True, max_retries=3)
-def dispatch_campaign(self, campaign_id: int, contacts: list, message: str,
-                      use_email: bool, use_sms: bool, use_telegram: bool,
-                      image_url: str = None, email_subject: str = None):
+def dispatch_campaign(
+    self,
+    campaign_id: int,
+    contacts: list,
+    message: str,
+    use_email: bool,
+    use_sms: bool,
+    use_telegram: bool,
+    image_url: str = None,
+    email_subject: str = None,
+):
     """
     Tarefa principal de disparo.
     Processa todos os contatos em background.
@@ -51,7 +55,9 @@ def dispatch_campaign(self, campaign_id: int, contacts: list, message: str,
             # Disparo via Email
             if use_email and contact.get("email"):
                 core_contact = CoreContact(name=name, destination=contact["email"])
-                result = EmailChannel().send(core_contact, message, image_url=image_url, subject=email_subject)
+                result = EmailChannel().send(
+                    core_contact, message, image_url=image_url, subject=email_subject
+                )
                 total += 1
                 success += 1 if result.success else 0
                 failed += 1 if not result.success else 0
@@ -63,11 +69,19 @@ def dispatch_campaign(self, campaign_id: int, contacts: list, message: str,
                 total += 1
                 success += 1 if result.success else 0
                 failed += 1 if not result.success else 0
+                if not result.success:
+                    print(
+                        f"[SMS][campaign={campaign_id}] contato='{name}' destino='{contact['phone']}' erro='{result.error}'"
+                    )
 
             # Disparo via Telegram
             if use_telegram and contact.get("telegram_id"):
-                core_contact = CoreContact(name=name, destination=contact["telegram_id"])
-                result = TelegramChannel().send(core_contact, message, image_url=image_url)
+                core_contact = CoreContact(
+                    name=name, destination=contact["telegram_id"]
+                )
+                result = TelegramChannel().send(
+                    core_contact, message, image_url=image_url
+                )
                 total += 1
                 success += 1 if result.success else 0
                 failed += 1 if not result.success else 0
