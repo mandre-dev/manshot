@@ -8,6 +8,7 @@ Suporta envio de imagem + legenda.
 import httpx
 import re
 from html import unescape
+from html import escape
 import unicodedata
 
 from .base import BaseChannel, Contact, DispatchResult
@@ -53,7 +54,11 @@ class TelegramChannel(BaseChannel):
         return unicodedata.normalize("NFC", text.strip())
 
     def send(
-        self, contact: Contact, message: str, image_url: str = None
+        self,
+        contact: Contact,
+        message: str,
+        image_url: str = None,
+        signature: str = None,
     ) -> DispatchResult:
         """
         Envia mensagem para um contato via Telegram.
@@ -63,6 +68,17 @@ class TelegramChannel(BaseChannel):
         try:
             telegram_html = self._editor_html_to_telegram_html(message)
             personalized_message = telegram_html.format(name=contact.name)
+
+            if signature and signature.strip():
+                sig = unicodedata.normalize("NFC", signature.strip())
+                sig = sig.replace("[", "").replace("]", "")
+                sig = escape(sig)
+                prefix = f"[{sig}]"
+                personalized_message = (
+                    f"{prefix}\n{personalized_message}"
+                    if personalized_message
+                    else prefix
+                )
 
             if image_url:
                 # Envia imagem com legenda
