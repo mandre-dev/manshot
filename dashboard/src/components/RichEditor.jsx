@@ -3,7 +3,8 @@
 
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
-import { useEffect, useState } from 'react'
+import Placeholder from '@tiptap/extension-placeholder'
+import { useEffect } from 'react'
 
 const btnStyle = (active) => ({
   background: active ? '#FF6B0033' : '#1a1208',
@@ -19,18 +20,20 @@ const btnStyle = (active) => ({
 })
 
 export default function RichEditor({ value, onChange, placeholder = 'Digite sua mensagem...' }) {
-  const [isEmpty, setIsEmpty] = useState(true)
-  const getEditorIsEmpty = (editorInstance) => !editorInstance || editorInstance.getText().trim().length === 0
-
   const editor = useEditor({
-    extensions: [StarterKit],
+    extensions: [
+      StarterKit,
+      Placeholder.configure({
+        placeholder,
+      }),
+    ],
     content: value || '',
     onUpdate({ editor }) {
-      setIsEmpty(getEditorIsEmpty(editor))
       onChange(editor.getHTML())
     },
     editorProps: {
       attributes: {
+        class: 'rich-editor-content',
         style: [
           'background: #1a1208',
           'border: 1px solid #2a1a0a',
@@ -48,19 +51,13 @@ export default function RichEditor({ value, onChange, placeholder = 'Digite sua 
   })
 
   useEffect(() => {
-    if (editor && value === '') {
-      editor.commands.clearContent()
-    }
-    if (editor) {
-      setIsEmpty(getEditorIsEmpty(editor))
+    if (!editor) return
+
+    const nextContent = value || ''
+    if (editor.getHTML() !== nextContent) {
+      editor.commands.setContent(nextContent, false)
     }
   }, [editor, value])
-
-  useEffect(() => {
-    if (editor) {
-      setIsEmpty(getEditorIsEmpty(editor))
-    }
-  }, [editor])
 
   if (!editor) return null
 
@@ -96,24 +93,17 @@ export default function RichEditor({ value, onChange, placeholder = 'Digite sua 
       </div>
 
       {/* Editor */}
-      <div style={{ position: 'relative' }}>
-        {isEmpty && (
-          <div style={{
-            position: 'absolute',
-            top: '12px',
-            left: '14px',
-            zIndex: 1,
-            color: '#6b7280',
-            fontSize: '13px',
-            fontFamily: "'Space Mono', monospace",
-            pointerEvents: 'none',
-            userSelect: 'none',
-          }}>
-            {placeholder}
-          </div>
-        )}
-        <EditorContent editor={editor} />
-      </div>
+      <EditorContent editor={editor} />
+
+      <style>{`
+        .rich-editor-content .is-editor-empty:first-child::before {
+          content: attr(data-placeholder);
+          color: #6b7280;
+          float: left;
+          height: 0;
+          pointer-events: none;
+        }
+      `}</style>
     </div>
   )
 }
