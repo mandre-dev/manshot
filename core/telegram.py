@@ -6,6 +6,9 @@ Suporta envio de imagem + legenda.
 """
 
 import httpx
+import re
+from html import unescape
+import unicodedata
 
 from .base import BaseChannel, Contact, DispatchResult
 from .config import settings
@@ -21,14 +24,45 @@ class TelegramChannel(BaseChannel):
     def __init__(self):
         self.base_url = f"https://api.telegram.org/bot{settings.TELEGRAM_BOT_TOKEN}"
 
-    def send(self, contact: Contact, message: str, image_url: str = None) -> DispatchResult:
+    @staticmethod
+    def _editor_html_to_telegram_html(message: str) -> str:
+        if not message:
+            return ""
+
+        text = unescape(message)
+
+        # Normaliza tags de formato suportadas pelo Telegram.
+        text = re.sub(r"<\s*(strong|b)(\s+[^>]*)?>", "<b>", text, flags=re.IGNORECASE)
+        text = re.sub(r"<\s*/\s*(strong|b)\s*>", "</b>", text, flags=re.IGNORECASE)
+        text = re.sub(r"<\s*(em|i)(\s+[^>]*)?>", "<i>", text, flags=re.IGNORECASE)
+        text = re.sub(r"<\s*/\s*(em|i)\s*>", "</i>", text, flags=re.IGNORECASE)
+        text = re.sub(r"<\s*u(\s+[^>]*)?>", "<u>", text, flags=re.IGNORECASE)
+        text = re.sub(r"<\s*/\s*u\s*>", "</u>", text, flags=re.IGNORECASE)
+
+        # Blocos viram quebra de linha para manter legibilidade.
+        text = re.sub(r"<br\s*/?>", "\n", text, flags=re.IGNORECASE)
+        text = re.sub(r"</p\s*>", "\n", text, flags=re.IGNORECASE)
+        text = re.sub(r"<p\s*[^>]*>", "", text, flags=re.IGNORECASE)
+
+        # Remove qualquer tag nao suportada pelo Telegram.
+        text = re.sub(r"<(?!/?(?:b|i|u)\b)[^>]+>", "", text, flags=re.IGNORECASE)
+
+        # Executa unescape novamente para casos duplamente escapados.
+        text = unescape(text)
+        text = re.sub(r"\n{3,}", "\n\n", text)
+        return unicodedata.normalize("NFC", text.strip())
+
+    def send(
+        self, contact: Contact, message: str, image_url: str = None
+    ) -> DispatchResult:
         """
         Envia mensagem para um contato via Telegram.
         Se image_url for fornecida, envia imagem + legenda.
         A mensagem suporta variáveis: use {name} para personalizar.
         """
         try:
-            personalized_message = message.format(name=contact.name)
+            telegram_html = self._editor_html_to_telegram_html(message)
+            personalized_message = telegram_html.format(name=contact.name)
 
             if image_url:
                 # Envia imagem com legenda
@@ -38,9 +72,9 @@ class TelegramChannel(BaseChannel):
                         "chat_id": contact.destination,
                         "photo": image_url,
                         "caption": personalized_message,
-                        "parse_mode": "Markdown"
+                        "parse_mode": "HTML",
                     },
-                    timeout=10
+                    timeout=10,
                 )
             else:
                 # Envia só texto
@@ -49,9 +83,9 @@ class TelegramChannel(BaseChannel):
                     json={
                         "chat_id": contact.destination,
                         "text": personalized_message,
-                        "parse_mode": "Markdown"
+                        "parse_mode": "HTML",
                     },
-                    timeout=10
+                    timeout=10,
                 )
 
             data = response.json()
