@@ -48,8 +48,47 @@ class SMSChannel(BaseChannel):
         # Formato esperado: 55 + DDD + numero (12 ou 13 digitos)
         return phone.startswith("55") and len(phone) in (12, 13)
 
+    @staticmethod
+    def _normalize_sender_id(sender: str) -> str:
+        """
+        Normaliza sender ID para formato aceito por gateways SMS.
+        - Numerico: apenas digitos (sem +)
+        - Alfanumerico: apenas A-Z/0-9 com ate 11 caracteres
+        """
+        raw = (sender or "").strip()
+        if not raw:
+            return ""
+
+        numeric = re.sub(r"\D", "", raw)
+        if numeric:
+            return numeric
+
+        ascii_sender = (
+            unicodedata.normalize("NFKD", raw).encode("ascii", "ignore").decode("ascii")
+        )
+        alnum = re.sub(r"[^A-Za-z0-9]", "", ascii_sender).upper()
+        return alnum[:11]
+
+    @staticmethod
+    def _normalize_display_sender(sender: str, fallback_sender_id: str) -> str:
+        """
+        Nome exibido no corpo do SMS (fallback visual).
+        Preserva acentos para aparecer como digitado no Manshot.
+        """
+        raw = unicodedata.normalize("NFC", (sender or "").strip())
+        if not raw:
+            return fallback_sender_id
+
+        # Remove apenas colchetes para manter o prefixo [NOME] consistente.
+        clean = raw.replace("[", "").replace("]", "")
+        return clean[:30]
+
     def send(
-        self, contact: Contact, message: str, image_url: str = None
+        self,
+        contact: Contact,
+        message: str,
+        image_url: str = None,
+        sms_from: str = None,
     ) -> DispatchResult:
         """
         Envia SMS para um contato.
@@ -69,15 +108,33 @@ class SMSChannel(BaseChannel):
                 )
 
             plain_message = self._html_to_text(message)
+            sender_raw = sms_from or settings.VONAGE_PHONE_FROM
+            sender_id = self._normalize_sender_id(sender_raw)
+            if not sender_id:
+                return DispatchResult(
+                    contact=contact,
+                    success=False,
+                    error="Remetente SMS invalido. Use apenas letras/numeros.",
+                )
+            display_sender = self._normalize_display_sender(sender_raw, sender_id)
+
             personalized_message = plain_message.format(name=contact.name)
+            # Sempre inclui o remetente entre colchetes no corpo do SMS.
+            sender_prefix = f"[{display_sender}]"
+            if personalized_message:
+                personalized_message = f"{sender_prefix} {personalized_message}"
+            else:
+                personalized_message = sender_prefix
 
             # Adiciona o link da imagem no SMS se houver
             if image_url:
                 personalized_message += f"\n\nVer imagem: {image_url}"
 
+            print(f"[SMS] sender_id='{sender_id}' destino='{sanitized_phone}'")
+
             msg = SmsMessage(
                 to=sanitized_phone,
-                from_=settings.VONAGE_PHONE_FROM,
+                from_=sender_id,
                 text=personalized_message,
                 type="unicode",
             )

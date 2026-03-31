@@ -34,6 +34,7 @@ def dispatch_campaign(
     use_telegram: bool,
     image_url: str = None,
     email_subject: str = None,
+    sms_from: str = None,
 ):
     """
     Tarefa principal de disparo.
@@ -65,7 +66,12 @@ def dispatch_campaign(
             # Disparo via SMS
             if use_sms and contact.get("phone"):
                 core_contact = CoreContact(name=name, destination=contact["phone"])
-                result = SMSChannel().send(core_contact, message, image_url=image_url)
+                result = SMSChannel().send(
+                    core_contact,
+                    message,
+                    image_url=image_url,
+                    sms_from=sms_from,
+                )
                 total += 1
                 success += 1 if result.success else 0
                 failed += 1 if not result.success else 0

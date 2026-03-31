@@ -24,6 +24,7 @@ class Campaign(Base):
     name = Column(String, nullable=False)
     message = Column(String, nullable=False)
     email_subject = Column(String, nullable=True)  # Assunto do email
+    sms_from = Column(String, nullable=True)  # Remetente customizado do SMS
     image_url = Column(String, nullable=True)  # URL da imagem no ImgBB
 
     # Canais — o usuário escolhe um ou mais
