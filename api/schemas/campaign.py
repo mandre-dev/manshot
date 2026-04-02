@@ -3,7 +3,7 @@ schemas/campaign.py — Manshot
 Define o formato dos dados de campanha que a API aceita e retorna.
 """
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import datetime
 from typing import Optional
 from api.models.campaign import StatusEnum
@@ -44,3 +44,10 @@ class CampaignResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class CampaignSendRequest(BaseModel):
+    """Payload para disparo de campanha com filtros e intervalo."""
+
+    ids: Optional[list[int]] = None
+    interval_seconds: float = Field(default=0, ge=0)

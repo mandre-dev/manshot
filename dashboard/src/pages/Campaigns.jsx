@@ -59,6 +59,22 @@ const CheckBox = ({ label, checked, onChange, icon }) => (
   </label>
 )
 
+function formatDuration(seconds) {
+  const safeSeconds = Math.max(0, Math.round(Number(seconds) || 0))
+  const minutes = Math.floor(safeSeconds / 60)
+  const remainingSeconds = safeSeconds % 60
+
+  if (minutes === 0) {
+    return `${remainingSeconds}s`
+  }
+
+  if (remainingSeconds === 0) {
+    return `${minutes}m`
+  }
+
+  return `${minutes}m ${remainingSeconds}s`
+}
+
 function DropdownMenu({ campaign, onEdit, onDelete }) {
   const [open, setOpen] = useState(false)
   const ref = useRef()
@@ -179,6 +195,7 @@ export default function Campaigns() {
   const [showSelectContacts, setShowSelectContacts] = useState(false)
   const [selectedContacts, setSelectedContacts] = useState(new Set())
   const [campaignToSend, setCampaignToSend] = useState(null)
+  const [sendInterval, setSendInterval] = useState(0)
 
   async function load() {
     try {
@@ -272,6 +289,10 @@ export default function Campaigns() {
 
   async function confirmSendWithContacts() {
     if (!campaignToSend) return
+    if (selectedContacts.size === 0) {
+      alert('Selecione pelo menos um contato para disparar a campanha')
+      return
+    }
 
     setShowSelectContacts(false)
     setSending(campaignToSend)
@@ -279,7 +300,7 @@ export default function Campaigns() {
 
     try {
       const contactIdArray = Array.from(selectedContacts)
-      await sendCampaign(campaignToSend, contactIdArray.length > 0 ? contactIdArray : null)
+      await sendCampaign(campaignToSend, contactIdArray, sendInterval)
       load()
       setSendingModalStatus('success')
       setTimeout(() => {
@@ -311,6 +332,10 @@ export default function Campaigns() {
       setSelectedContacts(new Set(contacts.map(c => c.id)))
     }
   }
+
+  const intervalSeconds = Math.max(0, Number(sendInterval) || 0)
+  const selectedCount = selectedContacts.size
+  const totalStaggerSeconds = selectedCount > 1 ? (selectedCount - 1) * intervalSeconds : 0
 
   return (
     <div>
@@ -563,6 +588,37 @@ export default function Campaigns() {
               </div>
             )}
 
+            <div style={{ marginBottom: '8px' }}>
+              <label style={{ display: 'block', color: '#9ca3af', fontSize: '11px', marginBottom: '6px', fontFamily: "'Space Mono', monospace" }}>
+                Intervalo antes de cada envio (segundos)
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="0.5"
+                value={sendInterval}
+                onChange={e => setSendInterval(e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+
+            {selectedCount > 1 && (
+              <div style={{
+                background: '#1a1208',
+                border: '1px solid #2a1a0a',
+                borderRadius: '8px',
+                padding: '10px 12px',
+                marginBottom: '8px'
+              }}>
+                <div style={{ color: '#e5e7eb', fontSize: '12px', fontFamily: "'Space Mono', monospace" }}>
+                  Intervalo entre destinatários: {formatDuration(intervalSeconds)}
+                </div>
+                <div style={{ color: '#9ca3af', fontSize: '11px', marginTop: '4px', fontFamily: "'Space Mono', monospace" }}>
+                  {selectedCount} contatos selecionados. Último envio em aproximadamente {formatDuration(totalStaggerSeconds)}.
+                </div>
+              </div>
+            )}
+
             <div style={{ display: 'flex', gap: '8px', marginTop: '20px' }}>
               <button onClick={confirmSendWithContacts} style={{
                 background: '#FF6B00', color: '#fff', border: 'none',
@@ -572,7 +628,10 @@ export default function Campaigns() {
               }}>
                 ▶ Disparar ({selectedContacts.size})
               </button>
-              <button onClick={() => setShowSelectContacts(false)} style={{
+              <button onClick={() => {
+                setShowSelectContacts(false)
+                setSendInterval(0)
+              }} style={{
                 background: 'transparent', color: '#9ca3af',
                 border: '2px solid #2a1a0a', borderRadius: '8px',
                 padding: '10px 16px', fontSize: '13px', cursor: 'pointer',
