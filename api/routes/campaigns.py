@@ -12,8 +12,13 @@ from api.models.contact import Contact
 from api.schemas.campaign import CampaignCreate, CampaignResponse, CampaignSendRequest
 from api.tasks import dispatch_campaign
 from typing import List
+from core.auth import get_current_user
 
-router = APIRouter(prefix="/campaigns", tags=["Campanhas"])
+router = APIRouter(
+    prefix="/campaigns",
+    tags=["Campanhas"],
+    dependencies=[Depends(get_current_user)],
+)
 
 
 @router.post("/", response_model=CampaignResponse)

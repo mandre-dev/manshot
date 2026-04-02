@@ -226,6 +226,22 @@ export default function Campaigns() {
     loadContacts()
   }, [])
 
+  useEffect(() => {
+    const hasRunningCampaign = campaigns.some(c => c.status === 'running')
+    if (!hasRunningCampaign) return
+
+    const intervalId = setInterval(async () => {
+      try {
+        const res = await getCampaigns()
+        setCampaigns(res.data)
+      } catch (err) {
+        console.error(err)
+      }
+    }, 3000)
+
+    return () => clearInterval(intervalId)
+  }, [campaigns])
+
   async function handleImageUpload(e) {
     const file = e.target.files[0]
     if (!file) return

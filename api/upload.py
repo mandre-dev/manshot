@@ -6,10 +6,15 @@ Recebe uma imagem, envia para o ImgBB e retorna a URL pública.
 
 import httpx
 import base64
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from core.config import settings
+from core.auth import get_current_user
 
-router = APIRouter(prefix="/upload", tags=["Upload"])
+router = APIRouter(
+    prefix="/upload",
+    tags=["Upload"],
+    dependencies=[Depends(get_current_user)],
+)
 
 
 async def upload_to_imgbb(image_bytes: bytes) -> str:
