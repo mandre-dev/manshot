@@ -1,10 +1,28 @@
 // api.js — Manshot
 import axios from 'axios'
 
+const TOKEN_KEY = 'manshot_token'
+
 const api = axios.create({
   baseURL: 'http://127.0.0.1:8000',
   headers: { 'Content-Type': 'application/json' },
 })
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem(TOKEN_KEY)
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
+export const saveToken = (token) => localStorage.setItem(TOKEN_KEY, token)
+export const getToken = () => localStorage.getItem(TOKEN_KEY)
+export const clearToken = () => localStorage.removeItem(TOKEN_KEY)
+
+// ── Auth ────────────────────────────────────────────
+export const login = (email, password) => api.post('/auth/login', { email, password })
+export const getMe = () => api.get('/auth/me')
 
 // ── Contatos ────────────────────────────────────────
 export const getContacts = () => api.get('/contacts/')
@@ -29,7 +47,7 @@ export const sendCampaign = (id, contactIds = null, intervalSeconds = 0) => {
 export const uploadImage = (file) => {
   const formData = new FormData()
   formData.append('file', file)
-  return axios.post('http://127.0.0.1:8000/upload/image', formData, {
+  return api.post('/upload/image', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   })
 }

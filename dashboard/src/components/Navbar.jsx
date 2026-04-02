@@ -9,7 +9,7 @@ const links = [
   { path: '/campaigns', icon: '📡', label: 'Campanhas' },
 ]
 
-export default function Navbar() {
+export default function Navbar({ onLogout }) {
   const location = useLocation()
 
   return (
@@ -83,6 +83,24 @@ export default function Navbar() {
           </Link>
         )
       })}
+
+      <button
+        onClick={onLogout}
+        style={{
+          marginTop: 'auto',
+          width: '100%',
+          borderRadius: '8px',
+          padding: '10px 14px',
+          fontSize: '13px',
+          color: '#f87171',
+          background: '#4c1d241f',
+          border: '1px solid #4c1d24',
+          cursor: 'pointer',
+          fontFamily: "'Space Mono', monospace"
+        }}
+      >
+        Sair
+      </button>
     </aside>
   )
 }

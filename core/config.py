@@ -27,6 +27,13 @@ class Settings(BaseSettings):
     # --- ImgBB (upload de imagens) ---
     IMGBB_API_KEY: str = ""
 
+    # --- Auth (login) ---
+    ADMIN_EMAIL: str = "admin@manshot.local"
+    ADMIN_PASSWORD: str = "admin123"
+    JWT_SECRET_KEY: str = "change-this-secret-key"
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
