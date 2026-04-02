@@ -6,6 +6,7 @@ sem travar a API enquanto processa.
 """
 
 import ssl
+import time
 from celery import Celery
 from core import EmailChannel, SMSChannel, TelegramChannel
 from core.base import Contact as CoreContact
@@ -36,6 +37,7 @@ def dispatch_campaign(
     email_subject: str = None,
     sms_from: str = None,
     telegram_signature: str = None,
+    interval_seconds: float = 0,
 ):
     """
     Tarefa principal de disparo.
@@ -52,6 +54,10 @@ def dispatch_campaign(
 
     try:
         for contact in contacts:
+            # Aguarda o intervalo configurado antes de processar cada contato.
+            if interval_seconds > 0:
+                time.sleep(interval_seconds)
+
             name = contact["name"]
 
             # Disparo via Email

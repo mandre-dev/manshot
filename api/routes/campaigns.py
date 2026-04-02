@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from api.database import get_db
 from api.models.campaign import Campaign, StatusEnum
 from api.models.contact import Contact
-from api.schemas.campaign import CampaignCreate, CampaignResponse
+from api.schemas.campaign import CampaignCreate, CampaignResponse, CampaignSendRequest
 from api.tasks import dispatch_campaign
 from typing import List
 
@@ -43,7 +43,9 @@ def get_campaign(campaign_id: int, db: Session = Depends(get_db)):
 
 @router.post("/{campaign_id}/send", response_model=CampaignResponse)
 def send_campaign(
-    campaign_id: int, contact_ids: dict = None, db: Session = Depends(get_db)
+    campaign_id: int,
+    payload: CampaignSendRequest | None = None,
+    db: Session = Depends(get_db),
 ):
     """
     Enfileira a campanha para disparo assíncrono.
@@ -60,9 +62,11 @@ def send_campaign(
     if campaign.status == StatusEnum.running:
         raise HTTPException(status_code=400, detail="Campanha já está em execução")
 
-    # Se contact_ids foi fornecido, usa apenas esses contatos
-    if contact_ids and "ids" in contact_ids:
-        contacts = db.query(Contact).filter(Contact.id.in_(contact_ids["ids"])).all()
+    # Se ids foi fornecido, usa apenas esses contatos
+    if payload and payload.ids is not None:
+        if len(payload.ids) == 0:
+            raise HTTPException(status_code=400, detail="Nenhum contato selecionado")
+        contacts = db.query(Contact).filter(Contact.id.in_(payload.ids)).all()
     else:
         contacts = db.query(Contact).all()
 
@@ -94,6 +98,7 @@ def send_campaign(
         email_subject=campaign.email_subject,
         sms_from=campaign.sms_from,
         telegram_signature=campaign.telegram_signature,
+        interval_seconds=payload.interval_seconds if payload else 0,
     )
 
     return campaign
