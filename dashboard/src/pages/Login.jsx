@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Eye, EyeOff } from 'lucide-react'
 import { login, saveToken } from '../services/api'
 
 const inputStyle = {
@@ -19,6 +20,7 @@ export default function Login() {
   const [form, setForm] = useState({ email: '', password: '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -70,14 +72,46 @@ export default function Login() {
             style={inputStyle}
           />
 
-          <input
-            type="password"
-            placeholder="Senha"
-            required
-            value={form.password}
-            onChange={e => setForm({ ...form, password: e.target.value })}
-            style={inputStyle}
-          />
+          <div style={{ position: 'relative' }}>
+            <input
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Senha"
+              required
+              value={form.password}
+              onChange={e => setForm({ ...form, password: e.target.value })}
+              style={{ ...inputStyle, paddingRight: '46px' }}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(prev => !prev)}
+              aria-label={showPassword ? 'Ocultar senha' : 'Ver senha'}
+              style={{
+                position: 'absolute',
+                right: '10px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: '#1a1208',
+                border: '1px solid #2a1a0a',
+                borderRadius: '6px',
+                padding: '4px',
+                cursor: 'pointer',
+                color: '#FF6B00',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = '#2a1a0a'
+                e.currentTarget.style.borderColor = '#FF6B0044'
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = '#1a1208'
+                e.currentTarget.style.borderColor = '#2a1a0a'
+              }}
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
 
           {error && (
             <div style={{ color: '#f87171', fontSize: '12px', fontFamily: "'Space Mono', monospace" }}>
