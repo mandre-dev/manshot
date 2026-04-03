@@ -124,7 +124,7 @@ function DropdownMenu({ campaign, onEdit, onDelete }) {
             fontSize: '12px', cursor: 'pointer', textAlign: 'left',
             fontFamily: "'Space Mono', monospace",
           }}
-            onMouseEnter={e => e.currentTarget.style.background = '#1a1208'}
+            onMouseEnter={e => e.currentTarget.style.background = '#633b0a'}
             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
           >✏️ Editar</button>
           <button onClick={() => { onDelete(campaign.id); setOpen(false) }} style={{
