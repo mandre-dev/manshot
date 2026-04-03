@@ -73,6 +73,18 @@ export default function Contacts() {
   const [loading, setLoading] = useState(true)
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState({ name: '', email: '', phone: '', telegram_id: '' })
+  const [focusedField, setFocusedField] = useState('')
+
+  function getAnimatedInputStyle(field) {
+    const isFocused = focusedField === field
+    return {
+      ...inputStyle,
+      border: isFocused ? '2px solid #FF6B00' : '2px solid #2a1a0a',
+      boxShadow: isFocused ? '0 0 0 3px #FF6B0033, 0 8px 24px #FF6B001f' : 'none',
+      transform: isFocused ? 'translateY(-1px)' : 'translateY(0)',
+      transition: 'border-color 0.16s ease, box-shadow 0.16s ease, transform 0.12s ease',
+    }
+  }
 
   async function load() {
     try {
@@ -167,13 +179,21 @@ export default function Contacts() {
         </div>
         <form onSubmit={handleSubmit}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
-            <input style={inputStyle} placeholder="Nome *" value={form.name}
+            <input style={getAnimatedInputStyle('name')} placeholder="Nome *" value={form.name}
+              onFocus={() => setFocusedField('name')}
+              onBlur={() => setFocusedField('')}
               onChange={e => setForm({ ...form, name: e.target.value })} required />
-            <input style={inputStyle} placeholder="Email" value={form.email}
+            <input style={getAnimatedInputStyle('email')} placeholder="Email" value={form.email}
+              onFocus={() => setFocusedField('email')}
+              onBlur={() => setFocusedField('')}
               onChange={e => setForm({ ...form, email: e.target.value })} />
-            <input style={inputStyle} placeholder="Telefone (ex: 5521999999999)" value={form.phone}
+            <input style={getAnimatedInputStyle('phone')} placeholder="Telefone (ex: 5521999999999)" value={form.phone}
+              onFocus={() => setFocusedField('phone')}
+              onBlur={() => setFocusedField('')}
               onChange={e => setForm({ ...form, phone: e.target.value })} />
-            <input style={inputStyle} placeholder="Telegram ID" value={form.telegram_id}
+            <input style={getAnimatedInputStyle('telegram_id')} placeholder="Telegram ID" value={form.telegram_id}
+              onFocus={() => setFocusedField('telegram_id')}
+              onBlur={() => setFocusedField('')}
               onChange={e => setForm({ ...form, telegram_id: e.target.value })} />
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
