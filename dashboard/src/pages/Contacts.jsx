@@ -18,6 +18,8 @@ const inputStyle = {
 
 function DropdownMenu({ contact, onEdit, onDelete }) {
   const [open, setOpen] = useState(false)
+  const [isMenuHovered, setIsMenuHovered] = useState(false)
+  const [isMenuPressed, setIsMenuPressed] = useState(false)
   const ref = useRef()
 
   useEffect(() => {
@@ -33,15 +35,33 @@ function DropdownMenu({ contact, onEdit, onDelete }) {
       <button
         onClick={() => setOpen(!open)}
         style={{
-          background: 'transparent',
-          border: '2px solid #2a1a0a',
+          background: isMenuHovered ? '#1a1208' : 'transparent',
+          border: `2px solid ${isMenuHovered ? '#FF6B0055' : '#2a1a0a'}`,
           borderRadius: '6px',
-          color: '#9ca3af',
+          color: isMenuHovered ? '#FF6B00' : '#9ca3af',
           cursor: 'pointer',
           padding: '4px 10px',
           fontSize: '16px',
           lineHeight: '1',
           fontFamily: "'Space Mono', monospace",
+          transform: isMenuPressed
+            ? 'translateY(1px) scale(0.98)'
+            : isMenuHovered
+              ? 'translateY(-1px) scale(1.02)'
+              : 'translateY(0) scale(1)',
+          boxShadow: isMenuPressed
+            ? 'inset 0 0 0 1px #FF6B0077'
+            : isMenuHovered
+              ? '0 4px 12px #FF6B0022'
+              : '0 0 0 0 #00000000',
+          transition: 'all 0.12s ease',
+        }}
+        onMouseEnter={() => setIsMenuHovered(true)}
+        onMouseDown={() => setIsMenuPressed(true)}
+        onMouseUp={() => setIsMenuPressed(false)}
+        onMouseLeave={() => {
+          setIsMenuHovered(false)
+          setIsMenuPressed(false)
         }}
       >
         ···
@@ -80,7 +100,7 @@ function DropdownMenu({ contact, onEdit, onDelete }) {
               fontFamily: "'Space Mono', monospace",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#1a1208'
+              e.currentTarget.style.background = '#633b0a'
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.background = 'transparent'
@@ -127,17 +147,25 @@ export default function Contacts() {
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState({ name: '', email: '', phone: '', telegram_id: '' })
   const [focusedField, setFocusedField] = useState('')
+  const [hoveredField, setHoveredField] = useState('')
+  const [isAddHovered, setIsAddHovered] = useState(false)
   const [isAddPressed, setIsAddPressed] = useState(false)
   const [isImportHovered, setIsImportHovered] = useState(false)
   const [isImportPressed, setIsImportPressed] = useState(false)
 
   function getAnimatedInputStyle(field) {
     const isFocused = focusedField === field
+    const isHovered = hoveredField === field
+    const isActive = isFocused || isHovered
     return {
       ...inputStyle,
-      border: isFocused ? '2px solid #FF6B00' : '2px solid #2a1a0a',
-      boxShadow: isFocused ? '0 0 0 3px #FF6B0033, 0 8px 24px #FF6B001f' : 'none',
-      transform: isFocused ? 'translateY(-1px)' : 'translateY(0)',
+      border: isActive ? '2px solid #FF6B00' : '2px solid #2a1a0a',
+      boxShadow: isFocused
+        ? '0 0 0 3px #FF6B0033, 0 8px 24px #FF6B001f'
+        : isHovered
+          ? '0 0 0 2px #FF6B0022, 0 5px 16px #FF6B0017'
+          : 'none',
+      transform: isActive ? 'translateY(-1px)' : 'translateY(0)',
       transition: 'border-color 0.16s ease, box-shadow 0.16s ease, transform 0.12s ease',
     }
   }
@@ -269,6 +297,8 @@ export default function Contacts() {
               style={getAnimatedInputStyle('name')}
               placeholder="Nome *"
               value={form.name}
+              onMouseEnter={() => setHoveredField('name')}
+              onMouseLeave={() => setHoveredField('')}
               onFocus={() => setFocusedField('name')}
               onBlur={() => setFocusedField('')}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -278,6 +308,8 @@ export default function Contacts() {
               style={getAnimatedInputStyle('email')}
               placeholder="Email"
               value={form.email}
+              onMouseEnter={() => setHoveredField('email')}
+              onMouseLeave={() => setHoveredField('')}
               onFocus={() => setFocusedField('email')}
               onBlur={() => setFocusedField('')}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
@@ -286,6 +318,8 @@ export default function Contacts() {
               style={getAnimatedInputStyle('phone')}
               placeholder="Telefone (ex: 5521999999999)"
               value={form.phone}
+              onMouseEnter={() => setHoveredField('phone')}
+              onMouseLeave={() => setHoveredField('')}
               onFocus={() => setFocusedField('phone')}
               onBlur={() => setFocusedField('')}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
@@ -294,6 +328,8 @@ export default function Contacts() {
               style={getAnimatedInputStyle('telegram_id')}
               placeholder="Telegram ID"
               value={form.telegram_id}
+              onMouseEnter={() => setHoveredField('telegram_id')}
+              onMouseLeave={() => setHoveredField('')}
               onFocus={() => setFocusedField('telegram_id')}
               onBlur={() => setFocusedField('')}
               onChange={(e) => setForm({ ...form, telegram_id: e.target.value })}
@@ -314,13 +350,25 @@ export default function Contacts() {
                 cursor: 'pointer',
                 flex: 1,
                 fontFamily: "'Space Mono', monospace",
-                transform: isAddPressed ? 'translateY(1px) scale(0.99)' : 'translateY(0) scale(1)',
-                boxShadow: isAddPressed ? 'inset 0 0 0 2px #ff9a3d66' : '0 6px 18px #FF6B0033',
-                transition: 'transform 0.08s ease, box-shadow 0.12s ease',
+                transform: isAddPressed
+                  ? 'translateY(1px) scale(0.99)'
+                  : isAddHovered
+                    ? 'translateY(-1px) scale(1.01)'
+                    : 'translateY(0) scale(1)',
+                boxShadow: isAddPressed
+                  ? 'inset 0 0 0 2px #ff9a3d66'
+                  : isAddHovered
+                    ? '0 8px 22px #FF6B0042'
+                    : '0 6px 18px #FF6B0033',
+                transition: 'transform 0.1s ease, box-shadow 0.14s ease',
               }}
+              onMouseEnter={() => setIsAddHovered(true)}
               onMouseDown={() => setIsAddPressed(true)}
               onMouseUp={() => setIsAddPressed(false)}
-              onMouseLeave={() => setIsAddPressed(false)}
+              onMouseLeave={() => {
+                setIsAddHovered(false)
+                setIsAddPressed(false)
+              }}
             >
               {editingId ? 'Salvar alterações' : 'Adicionar contato'}
             </button>
