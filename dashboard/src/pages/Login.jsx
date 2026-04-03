@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
-import { login, register, saveToken } from '../services/api'
+import { checkCredentials, login, register, saveToken } from '../services/api'
 
 const inputStyle = {
   background: '#1a1208',
@@ -26,22 +26,102 @@ export default function Login() {
   const [isPrimaryPressed, setIsPrimaryPressed] = useState(false)
   const [isSecondaryPressed, setIsSecondaryPressed] = useState(false)
   const [focusedField, setFocusedField] = useState('')
+  const [hasInvalidCredentials, setHasInvalidCredentials] = useState(false)
+  const [credentialStatus, setCredentialStatus] = useState('idle')
+
+  function isEmailValid(email) {
+    const normalized = (email || '').trim()
+    return normalized.includes('@') && !normalized.startsWith('@') && !normalized.endsWith('@')
+  }
+
+  function getFieldValidationState(field) {
+    if (field === 'email') {
+      if (!form.email) return 'neutral'
+      return isEmailValid(form.email) ? 'valid' : 'invalid'
+    }
+
+    if (field === 'password') {
+      if (!form.password) return 'neutral'
+
+      if (isRegisterMode) {
+        return form.password.length >= 6 ? 'valid' : 'invalid'
+      }
+
+      if (credentialStatus === 'valid') {
+        return 'valid'
+      }
+
+      if (credentialStatus === 'invalid') {
+        return 'invalid'
+      }
+
+      return hasInvalidCredentials ? 'invalid' : 'neutral'
+    }
+
+    if (field === 'confirmPassword') {
+      if (!isRegisterMode || !confirmPassword) return 'neutral'
+      return confirmPassword === form.password && form.password.length >= 6 ? 'valid' : 'invalid'
+    }
+
+    return 'neutral'
+  }
 
   function getInputFocusStyle(field, extraStyle = {}) {
     const isFocused = focusedField === field
+    const validationState = getFieldValidationState(field)
+    const borderColor = validationState === 'valid'
+      ? '#22c55e'
+      : validationState === 'invalid'
+        ? '#ef4444'
+        : isFocused
+          ? '#FF6B00'
+          : '#2a1a0a'
+    const focusGlow = validationState === 'valid'
+      ? '0 0 0 3px #22c55e33, 0 8px 24px #22c55e1f'
+      : validationState === 'invalid'
+        ? '0 0 0 3px #ef444433, 0 8px 24px #ef44441a'
+        : '0 0 0 3px #FF6B0033, 0 8px 24px #FF6B001f'
+
     return {
       ...inputStyle,
       ...extraStyle,
-      border: isFocused ? '2px solid #FF6B00' : '2px solid #2a1a0a',
-      boxShadow: isFocused ? '0 0 0 3px #FF6B0033, 0 8px 24px #FF6B001f' : 'none',
+      border: `2px solid ${borderColor}`,
+      boxShadow: isFocused || validationState !== 'neutral' ? focusGlow : 'none',
       transform: isFocused ? 'translateY(-1px)' : 'translateY(0)',
       transition: 'border-color 0.16s ease, box-shadow 0.16s ease, transform 0.12s ease'
     }
   }
 
+  useEffect(() => {
+    if (isRegisterMode) {
+      setCredentialStatus('idle')
+      return
+    }
+
+    const email = form.email.trim()
+    const password = form.password
+    if (!isEmailValid(email) || !password) {
+      setCredentialStatus('idle')
+      return
+    }
+
+    setCredentialStatus('checking')
+    const timer = setTimeout(async () => {
+      try {
+        const res = await checkCredentials(email, password)
+        setCredentialStatus(res.data.valid ? 'valid' : 'invalid')
+      } catch {
+        setCredentialStatus('idle')
+      }
+    }, 350)
+
+    return () => clearTimeout(timer)
+  }, [form.email, form.password, isRegisterMode])
+
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
+    setHasInvalidCredentials(false)
 
     if (isRegisterMode && form.password !== confirmPassword) {
       setError('As senhas não conferem')
@@ -63,6 +143,10 @@ export default function Login() {
       } else {
         setError(isRegisterMode ? 'Não foi possível criar sua conta' : 'E-mail ou senha inválidos')
       }
+
+      if (!isRegisterMode) {
+        setHasInvalidCredentials(true)
+      }
     } finally {
       setLoading(false)
     }
@@ -72,6 +156,8 @@ export default function Login() {
     setIsRegisterMode(prev => !prev)
     setError('')
     setConfirmPassword('')
+    setHasInvalidCredentials(false)
+    setCredentialStatus('idle')
   }
 
   return (
@@ -104,7 +190,10 @@ export default function Login() {
             placeholder="E-mail"
             required
             value={form.email}
-            onChange={e => setForm({ ...form, email: e.target.value })}
+            onChange={e => {
+              setForm({ ...form, email: e.target.value })
+              setHasInvalidCredentials(false)
+            }}
             onFocus={() => setFocusedField('email')}
             onBlur={() => setFocusedField('')}
             style={getInputFocusStyle('email')}
@@ -116,7 +205,10 @@ export default function Login() {
               placeholder="Senha"
               required
               value={form.password}
-              onChange={e => setForm({ ...form, password: e.target.value })}
+              onChange={e => {
+                setForm({ ...form, password: e.target.value })
+                setHasInvalidCredentials(false)
+              }}
               onFocus={() => setFocusedField('password')}
               onBlur={() => setFocusedField('')}
               style={getInputFocusStyle('password', { paddingRight: '46px' })}

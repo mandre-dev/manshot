@@ -46,6 +46,10 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
 
 
+class CredentialsCheckResponse(BaseModel):
+    valid: bool
+
+
 class UserResponse(BaseModel):
     email: str
     is_admin: bool = False
