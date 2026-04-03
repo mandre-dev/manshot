@@ -213,6 +213,28 @@ export default function Campaigns() {
   const [selectedContacts, setSelectedContacts] = useState(new Set())
   const [campaignToSend, setCampaignToSend] = useState(null)
   const [sendInterval, setSendInterval] = useState(0)
+  const [focusedField, setFocusedField] = useState('')
+  const [hoveredField, setHoveredField] = useState('')
+  const [isPrimaryHovered, setIsPrimaryHovered] = useState(false)
+  const [isPrimaryPressed, setIsPrimaryPressed] = useState(false)
+
+  function getAnimatedInputStyle(field) {
+    const isFocused = focusedField === field
+    const isHovered = hoveredField === field
+    const isActive = isFocused || isHovered
+
+    return {
+      ...inputStyle,
+      border: isActive ? '2px solid #FF6B00' : '2px solid #2a1a0a',
+      boxShadow: isFocused
+        ? '0 0 0 3px #FF6B0033, 0 8px 24px #FF6B001f'
+        : isHovered
+          ? '0 0 0 2px #FF6B0022, 0 5px 16px #FF6B0017'
+          : 'none',
+      transform: isActive ? 'translateY(-1px)' : 'translateY(0)',
+      transition: 'border-color 0.16s ease, box-shadow 0.16s ease, transform 0.12s ease',
+    }
+  }
 
   async function load() {
     try {
@@ -395,8 +417,13 @@ export default function Campaigns() {
         </div>
         <form onSubmit={handleSubmit}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '14px' }}>
-            <input style={inputStyle} placeholder="Nome da campanha *"
-              value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
+            <input style={getAnimatedInputStyle('name')} placeholder="Nome da campanha *"
+              value={form.name}
+              onMouseEnter={() => setHoveredField('name')}
+              onMouseLeave={() => setHoveredField('')}
+              onFocus={() => setFocusedField('name')}
+              onBlur={() => setFocusedField('')}
+              onChange={e => setForm({ ...form, name: e.target.value })} required />
 
             <RichEditor
               value={form.message}
@@ -406,27 +433,39 @@ export default function Campaigns() {
 
             {form.use_email && (
               <input
-                style={inputStyle}
+                style={getAnimatedInputStyle('email_subject')}
                 placeholder="Assunto do e-mail (opcional)"
                 value={form.email_subject}
+                onMouseEnter={() => setHoveredField('email_subject')}
+                onMouseLeave={() => setHoveredField('')}
+                onFocus={() => setFocusedField('email_subject')}
+                onBlur={() => setFocusedField('')}
                 onChange={e => setForm({ ...form, email_subject: e.target.value })}
               />
             )}
 
             {form.use_sms && (
               <input
-                style={inputStyle}
+                style={getAnimatedInputStyle('sms_from')}
                 placeholder="Remetente do SMS (opcional)"
                 value={form.sms_from}
+                onMouseEnter={() => setHoveredField('sms_from')}
+                onMouseLeave={() => setHoveredField('')}
+                onFocus={() => setFocusedField('sms_from')}
+                onBlur={() => setFocusedField('')}
                 onChange={e => setForm({ ...form, sms_from: e.target.value })}
               />
             )}
 
             {form.use_telegram && (
               <input
-                style={inputStyle}
+                style={getAnimatedInputStyle('telegram_signature')}
                 placeholder="Assinatura do Telegram (opcional)"
                 value={form.telegram_signature}
+                onMouseEnter={() => setHoveredField('telegram_signature')}
+                onMouseLeave={() => setHoveredField('')}
+                onFocus={() => setFocusedField('telegram_signature')}
+                onBlur={() => setFocusedField('')}
                 onChange={e => setForm({ ...form, telegram_signature: e.target.value })}
               />
             )}
@@ -487,8 +526,27 @@ export default function Campaigns() {
               background: '#FF6B00', color: '#fff', border: 'none',
               borderRadius: '8px', padding: '10px 20px', fontSize: '13px',
               fontWeight: '600', cursor: 'pointer', flex: 1,
-              fontFamily: "'Space Mono', monospace"
-            }}>
+              fontFamily: "'Space Mono', monospace",
+              transform: isPrimaryPressed
+                ? 'translateY(1px) scale(0.99)'
+                : isPrimaryHovered
+                  ? 'translateY(-1px) scale(1.01)'
+                  : 'translateY(0) scale(1)',
+              boxShadow: isPrimaryPressed
+                ? 'inset 0 0 0 2px #ff9a3d66'
+                : isPrimaryHovered
+                  ? '0 8px 22px #FF6B0042'
+                  : '0 6px 18px #FF6B0033',
+              transition: 'transform 0.1s ease, box-shadow 0.14s ease',
+            }}
+              onMouseEnter={() => setIsPrimaryHovered(true)}
+              onMouseDown={() => setIsPrimaryPressed(true)}
+              onMouseUp={() => setIsPrimaryPressed(false)}
+              onMouseLeave={() => {
+                setIsPrimaryHovered(false)
+                setIsPrimaryPressed(false)
+              }}
+            >
               {editingId ? 'Salvar alterações' : 'Criar campanha'}
             </button>
             {editingId && (
