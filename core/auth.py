@@ -3,6 +3,10 @@ auth.py — Manshot
 Utilitários de autenticação JWT e dependências de proteção de rota.
 """
 
+import base64
+import hashlib
+import hmac
+import secrets
 from datetime import datetime, timedelta, timezone
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -10,6 +14,32 @@ from jose import JWTError, jwt
 from core.config import settings
 
 bearer_scheme = HTTPBearer()
+
+
+def hash_password(password: str) -> str:
+    iterations = 390000
+    salt = secrets.token_bytes(16)
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, iterations)
+    salt_b64 = base64.urlsafe_b64encode(salt).decode("utf-8")
+    digest_b64 = base64.urlsafe_b64encode(digest).decode("utf-8")
+    return f"pbkdf2_sha256${iterations}${salt_b64}${digest_b64}"
+
+
+def verify_password(password: str, encoded_password: str) -> bool:
+    try:
+        algorithm, iterations_str, salt_b64, digest_b64 = encoded_password.split("$", 3)
+        if algorithm != "pbkdf2_sha256":
+            return False
+
+        iterations = int(iterations_str)
+        salt = base64.urlsafe_b64decode(salt_b64.encode("utf-8"))
+        expected_digest = base64.urlsafe_b64decode(digest_b64.encode("utf-8"))
+        candidate_digest = hashlib.pbkdf2_hmac(
+            "sha256", password.encode("utf-8"), salt, iterations
+        )
+        return hmac.compare_digest(candidate_digest, expected_digest)
+    except Exception:
+        return False
 
 
 def create_access_token(subject: str) -> str:
