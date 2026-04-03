@@ -92,6 +92,8 @@ function getFileNameFromUrl(url) {
 
 function DropdownMenu({ campaign, onEdit, onDelete }) {
   const [open, setOpen] = useState(false)
+  const [isMenuHovered, setIsMenuHovered] = useState(false)
+  const [isMenuPressed, setIsMenuPressed] = useState(false)
   const ref = useRef()
 
   useEffect(() => {
@@ -104,12 +106,40 @@ function DropdownMenu({ campaign, onEdit, onDelete }) {
 
   return (
     <div ref={ref} style={{ position: 'relative' }}>
-      <button onClick={() => setOpen(!open)} style={{
-        background: 'transparent', border: '2px solid #2a1a0a',
-        borderRadius: '6px', color: '#9ca3af', cursor: 'pointer',
-        padding: '4px 10px', fontSize: '16px', lineHeight: '1',
-        fontFamily: "'Space Mono', monospace",
-      }}>···</button>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          background: isMenuHovered ? '#1a1208' : 'transparent',
+          border: `2px solid ${isMenuHovered ? '#FF6B0055' : '#2a1a0a'}`,
+          borderRadius: '6px',
+          color: isMenuHovered ? '#FF6B00' : '#9ca3af',
+          cursor: 'pointer',
+          padding: '4px 10px',
+          fontSize: '16px',
+          lineHeight: '1',
+          fontFamily: "'Space Mono', monospace",
+          transform: isMenuPressed
+            ? 'translateY(1px) scale(0.98)'
+            : isMenuHovered
+              ? 'translateY(-1px) scale(1.02)'
+              : 'translateY(0) scale(1)',
+          boxShadow: isMenuPressed
+            ? 'inset 0 0 0 1px #FF6B0077'
+            : isMenuHovered
+              ? '0 4px 12px #FF6B0022'
+              : '0 0 0 0 #00000000',
+          transition: 'all 0.12s ease',
+        }}
+        onMouseEnter={() => setIsMenuHovered(true)}
+        onMouseDown={() => setIsMenuPressed(true)}
+        onMouseUp={() => setIsMenuPressed(false)}
+        onMouseLeave={() => {
+          setIsMenuHovered(false)
+          setIsMenuPressed(false)
+        }}
+      >
+        ···
+      </button>
 
       {open && (
         <div style={{
@@ -651,16 +681,45 @@ export default function Campaigns() {
             <div style={{ flex: 1, color: '#9ca3af', fontSize: '13px', fontFamily: "'Space Mono', monospace" }}>{c.total}</div>
             <div style={{ flex: 1, color: '#10b981', fontSize: '13px', fontFamily: "'Space Mono', monospace" }}>{c.success}</div>
             <div style={{ flex: 1 }}>
-              <button onClick={() => handleSend(c.id)}
+              <button
+                onClick={() => handleSend(c.id)}
                 disabled={sending === c.id || c.status === 'running'}
                 style={{
                   background: sending === c.id ? '#2a1a0a' : '#FF6B0022',
                   color: '#FF6B00', border: '1px solid #FF6B0044',
                   borderRadius: '6px', padding: '4px 12px',
-                  fontSize: '11px', fontWeight: '600', cursor: 'pointer',
-                  transition: 'all 0.2s', opacity: c.status === 'running' ? 0.5 : 1,
-                  fontFamily: "'Space Mono', monospace"
-                }}>
+                  fontSize: '11px', fontWeight: '600',
+                  cursor: sending === c.id || c.status === 'running' ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.12s ease',
+                  opacity: c.status === 'running' ? 0.5 : 1,
+                  fontFamily: "'Space Mono', monospace",
+                  transform: sending === c.id ? 'translateY(1px) scale(0.98)' : 'translateY(0) scale(1)',
+                  boxShadow: sending === c.id ? 'inset 0 0 0 1px #FF6B0077' : 'none',
+                }}
+                onMouseEnter={e => {
+                  if (sending === c.id || c.status === 'running') return
+                  e.currentTarget.style.background = '#FF6B0033'
+                  e.currentTarget.style.borderColor = '#FF6B00'
+                  e.currentTarget.style.transform = 'translateY(-1px) scale(1.02)'
+                  e.currentTarget.style.boxShadow = '0 4px 12px #FF6B0022'
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = sending === c.id ? '#2a1a0a' : '#FF6B0022'
+                  e.currentTarget.style.borderColor = '#FF6B0044'
+                  e.currentTarget.style.transform = sending === c.id ? 'translateY(1px) scale(0.98)' : 'translateY(0) scale(1)'
+                  e.currentTarget.style.boxShadow = sending === c.id ? 'inset 0 0 0 1px #FF6B0077' : 'none'
+                }}
+                onMouseDown={e => {
+                  if (sending === c.id || c.status === 'running') return
+                  e.currentTarget.style.transform = 'translateY(1px) scale(0.98)'
+                  e.currentTarget.style.boxShadow = 'inset 0 0 0 1px #FF6B0077'
+                }}
+                onMouseUp={e => {
+                  if (sending === c.id || c.status === 'running') return
+                  e.currentTarget.style.transform = 'translateY(-1px) scale(1.02)'
+                  e.currentTarget.style.boxShadow = '0 4px 12px #FF6B0022'
+                }}
+              >
                 {sending === c.id ? '...' : '▶ Disparar'}
               </button>
             </div>
