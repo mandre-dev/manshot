@@ -115,9 +115,10 @@ export default function RichEditor({ value, onChange, placeholder = 'Digite sua 
         onMouseEnter={() => setWrapperHovered(true)}
         onMouseLeave={() => setWrapperHovered(false)}
         style={{
+          border: `1px solid ${wrapperHovered ? '#FF6B00' : '#2a1a0a'}`,
           borderRadius: '0 0 8px 8px',
-          boxShadow: wrapperHovered ? '0 0 0 2px #FF6B0022, 0 10px 24px #FF6B0015' : 'none',
-          transition: 'box-shadow 0.16s ease, transform 0.12s ease',
+          boxShadow: wrapperHovered ? '0 0 0 3px rgba(255,107,0,0.30), 0 10px 24px rgba(255,107,0,0.18)' : 'none',
+          transition: 'border-color 0.16s ease, box-shadow 0.16s ease, transform 0.12s ease',
           transform: wrapperHovered ? 'translateY(-1px)' : 'translateY(0)',
         }}
       >

@@ -217,6 +217,8 @@ export default function Campaigns() {
   const [hoveredField, setHoveredField] = useState('')
   const [isPrimaryHovered, setIsPrimaryHovered] = useState(false)
   const [isPrimaryPressed, setIsPrimaryPressed] = useState(false)
+  const [isUploadHovered, setIsUploadHovered] = useState(false)
+  const [isUploadPressed, setIsUploadPressed] = useState(false)
 
   function getAnimatedInputStyle(field) {
     const isFocused = focusedField === field
@@ -502,11 +504,38 @@ export default function Campaigns() {
                   <input type="file" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip,.rar" onChange={handleAttachmentUpload}
                     style={{ display: 'none' }} id="attachment-upload" disabled={uploading} />
                   <label htmlFor="attachment-upload" style={{
-                    background: '#FF6B0022', color: '#FF6B00',
-                    border: '1px solid #FF6B0044', borderRadius: '6px',
-                    padding: '6px 16px', fontSize: '12px', cursor: 'pointer',
-                    fontFamily: "'Space Mono', monospace"
-                  }}>Escolher arquivo</label>
+                    background: isUploadHovered ? '#FF6B0033' : '#FF6B0022',
+                    color: '#FF6B00',
+                    border: `1px solid ${isUploadHovered ? '#FF6B00' : '#FF6B0044'}`,
+                    borderRadius: '6px',
+                    padding: '6px 16px',
+                    fontSize: '12px',
+                    cursor: uploading ? 'not-allowed' : 'pointer',
+                    fontFamily: "'Space Mono', monospace",
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transform: isUploadPressed
+                      ? 'translateY(1px) scale(0.98)'
+                      : isUploadHovered
+                        ? 'translateY(-1px) scale(1.02)'
+                        : 'translateY(0) scale(1)',
+                    boxShadow: isUploadPressed
+                      ? 'inset 0 0 0 1px rgba(255,107,0,0.5)'
+                      : isUploadHovered
+                        ? '0 6px 18px rgba(255,107,0,0.16)'
+                        : 'none',
+                    transition: 'background 0.14s ease, border-color 0.14s ease, transform 0.12s ease, box-shadow 0.14s ease',
+                    opacity: uploading ? 0.7 : 1,
+                  }}
+                    onMouseEnter={() => !uploading && setIsUploadHovered(true)}
+                    onMouseLeave={() => {
+                      setIsUploadHovered(false)
+                      setIsUploadPressed(false)
+                    }}
+                    onMouseDown={() => !uploading && setIsUploadPressed(true)}
+                    onMouseUp={() => setIsUploadPressed(false)}
+                  >Escolher arquivo</label>
                 </div>
               )}
             </div>

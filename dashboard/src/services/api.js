@@ -16,6 +16,16 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401) {
+      clearToken()
+    }
+    return Promise.reject(error)
+  },
+)
+
 export const saveToken = (token) => localStorage.setItem(TOKEN_KEY, token)
 export const getToken = () => localStorage.getItem(TOKEN_KEY)
 export const clearToken = () => localStorage.removeItem(TOKEN_KEY)
