@@ -1,10 +1,40 @@
 // api.js — Manshot
 import axios from 'axios'
 
+const TOKEN_KEY = 'manshot_token'
+
 const api = axios.create({
   baseURL: 'http://127.0.0.1:8000',
   headers: { 'Content-Type': 'application/json' },
 })
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem(TOKEN_KEY)
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401) {
+      clearToken()
+    }
+    return Promise.reject(error)
+  },
+)
+
+export const saveToken = (token) => localStorage.setItem(TOKEN_KEY, token)
+export const getToken = () => localStorage.getItem(TOKEN_KEY)
+export const clearToken = () => localStorage.removeItem(TOKEN_KEY)
+
+// ── Auth ────────────────────────────────────────────
+export const login = (email, password) => api.post('/auth/login', { email, password })
+export const register = (email, password) => api.post('/auth/register', { email, password })
+export const checkCredentials = (email, password) => api.post('/auth/check-credentials', { email, password })
+export const getMe = () => api.get('/auth/me')
 
 // ── Contatos ────────────────────────────────────────
 export const getContacts = () => api.get('/contacts/')
@@ -26,12 +56,15 @@ export const sendCampaign = (id, contactIds = null, intervalSeconds = 0) => {
 }
 
 // ── Upload ──────────────────────────────────────────
-export const uploadImage = (file) => {
+export const uploadAttachment = (file) => {
   const formData = new FormData()
   formData.append('file', file)
-  return axios.post('http://127.0.0.1:8000/upload/image', formData, {
+  return api.post('/upload/file', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   })
 }
+
+// Compatibilidade para imports antigos.
+export const uploadImage = uploadAttachment
 
 export default api

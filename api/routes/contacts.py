@@ -9,8 +9,13 @@ from api.database import get_db
 from api.models.contact import Contact
 from api.schemas.contact import ContactCreate, ContactResponse
 from typing import List
+from core.auth import get_current_user
 
-router = APIRouter(prefix="/contacts", tags=["Contatos"])
+router = APIRouter(
+    prefix="/contacts",
+    tags=["Contatos"],
+    dependencies=[Depends(get_current_user)],
+)
 
 
 @router.post("/", response_model=ContactResponse)

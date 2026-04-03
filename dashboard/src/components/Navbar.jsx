@@ -1,5 +1,6 @@
 // Navbar.jsx — Manshot Orange Theme
 
+import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import logo from '../assets/logo-manshot.png'
 
@@ -9,8 +10,10 @@ const links = [
   { path: '/campaigns', icon: '📡', label: 'Campanhas' },
 ]
 
-export default function Navbar() {
+export default function Navbar({ onLogout }) {
   const location = useLocation()
+  const [isLogoutPressed, setIsLogoutPressed] = useState(false)
+  const [isLogoutHovered, setIsLogoutHovered] = useState(false)
 
   return (
     <aside style={{
@@ -83,6 +86,42 @@ export default function Navbar() {
           </Link>
         )
       })}
+
+      <button
+        onClick={onLogout}
+        style={{
+          marginTop: 'auto',
+          width: '100%',
+          borderRadius: '8px',
+          padding: '10px 14px',
+          fontSize: '13px',
+          color: '#f87171',
+          background: isLogoutHovered ? '#4c1d2433' : '#4c1d241f',
+          border: `1px solid ${isLogoutHovered ? '#f87171' : '#4c1d24'}`,
+          cursor: 'pointer',
+          fontFamily: "'Space Mono', monospace",
+          transform: isLogoutPressed
+            ? 'translateY(1px) scale(0.99)'
+            : isLogoutHovered
+              ? 'translateY(-1px) scale(1.01)'
+              : 'translateY(0) scale(1)',
+          boxShadow: isLogoutPressed
+            ? 'inset 0 0 0 2px #f8717144'
+            : isLogoutHovered
+              ? '0 6px 16px #f8717122'
+              : '0 0 0 0 #00000000',
+          transition: 'transform 0.08s ease, box-shadow 0.12s ease'
+        }}
+        onMouseEnter={() => setIsLogoutHovered(true)}
+        onMouseDown={() => setIsLogoutPressed(true)}
+        onMouseUp={() => setIsLogoutPressed(false)}
+        onMouseLeave={() => {
+          setIsLogoutPressed(false)
+          setIsLogoutHovered(false)
+        }}
+      >
+        Sair
+      </button>
     </aside>
   )
 }
