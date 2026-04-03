@@ -44,12 +44,15 @@ export const sendCampaign = (id, contactIds = null, intervalSeconds = 0) => {
 }
 
 // ── Upload ──────────────────────────────────────────
-export const uploadImage = (file) => {
+export const uploadAttachment = (file) => {
   const formData = new FormData()
   formData.append('file', file)
-  return api.post('/upload/image', formData, {
+  return api.post('/upload/file', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   })
 }
+
+// Compatibilidade para imports antigos.
+export const uploadImage = uploadAttachment
 
 export default api
