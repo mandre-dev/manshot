@@ -1,7 +1,7 @@
 // Campaigns.jsx — Manshot Orange Theme + Image Upload + Menu
 
 import { useEffect, useState, useRef } from 'react'
-import { getCampaigns, createCampaign, updateCampaign, deleteCampaign, sendCampaign, uploadImage, getContacts } from '../services/api'
+import { getCampaigns, createCampaign, updateCampaign, deleteCampaign, sendCampaign, uploadAttachment, getContacts } from '../services/api'
 import { Mail, MessageSquare, Send, CheckCircle } from 'lucide-react'
 import RichEditor from '../components/RichEditor'
 
@@ -75,8 +75,25 @@ function formatDuration(seconds) {
   return `${minutes}m ${remainingSeconds}s`
 }
 
+const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg']
+
+function isImageUrl(url) {
+  if (!url) return false
+  const lower = url.split('?')[0].toLowerCase()
+  return IMAGE_EXTENSIONS.some(ext => lower.endsWith(ext))
+}
+
+function getFileNameFromUrl(url) {
+  if (!url) return 'arquivo'
+  const clean = url.split('?')[0]
+  const parts = clean.split('/')
+  return parts[parts.length - 1] || 'arquivo'
+}
+
 function DropdownMenu({ campaign, onEdit, onDelete }) {
   const [open, setOpen] = useState(false)
+  const [isMenuHovered, setIsMenuHovered] = useState(false)
+  const [isMenuPressed, setIsMenuPressed] = useState(false)
   const ref = useRef()
 
   useEffect(() => {
@@ -89,12 +106,40 @@ function DropdownMenu({ campaign, onEdit, onDelete }) {
 
   return (
     <div ref={ref} style={{ position: 'relative' }}>
-      <button onClick={() => setOpen(!open)} style={{
-        background: 'transparent', border: '2px solid #2a1a0a',
-        borderRadius: '6px', color: '#9ca3af', cursor: 'pointer',
-        padding: '4px 10px', fontSize: '16px', lineHeight: '1',
-        fontFamily: "'Space Mono', monospace",
-      }}>···</button>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          background: isMenuHovered ? '#1a1208' : 'transparent',
+          border: `2px solid ${isMenuHovered ? '#FF6B0055' : '#2a1a0a'}`,
+          borderRadius: '6px',
+          color: isMenuHovered ? '#FF6B00' : '#9ca3af',
+          cursor: 'pointer',
+          padding: '4px 10px',
+          fontSize: '16px',
+          lineHeight: '1',
+          fontFamily: "'Space Mono', monospace",
+          transform: isMenuPressed
+            ? 'translateY(1px) scale(0.98)'
+            : isMenuHovered
+              ? 'translateY(-1px) scale(1.02)'
+              : 'translateY(0) scale(1)',
+          boxShadow: isMenuPressed
+            ? 'inset 0 0 0 1px #FF6B0077'
+            : isMenuHovered
+              ? '0 4px 12px #FF6B0022'
+              : '0 0 0 0 #00000000',
+          transition: 'all 0.12s ease',
+        }}
+        onMouseEnter={() => setIsMenuHovered(true)}
+        onMouseDown={() => setIsMenuPressed(true)}
+        onMouseUp={() => setIsMenuPressed(false)}
+        onMouseLeave={() => {
+          setIsMenuHovered(false)
+          setIsMenuPressed(false)
+        }}
+      >
+        ···
+      </button>
 
       {open && (
         <div style={{
@@ -109,7 +154,7 @@ function DropdownMenu({ campaign, onEdit, onDelete }) {
             fontSize: '12px', cursor: 'pointer', textAlign: 'left',
             fontFamily: "'Space Mono', monospace",
           }}
-            onMouseEnter={e => e.currentTarget.style.background = '#1a1208'}
+            onMouseEnter={e => e.currentTarget.style.background = '#633b0a'}
             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
           >✏️ Editar</button>
           <button onClick={() => { onDelete(campaign.id); setOpen(false) }} style={{
@@ -185,6 +230,8 @@ export default function Campaigns() {
   const [sendingModalStatus, setSendingModalStatus] = useState(null) // null | 'loading' | 'success'
   const [uploading, setUploading] = useState(false)
   const [imagePreview, setImagePreview] = useState(null)
+  const [attachmentName, setAttachmentName] = useState('')
+  const [attachmentIsImage, setAttachmentIsImage] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState({
     name: '', message: '', image_url: null, email_subject: '', sms_from: '', telegram_signature: '',
@@ -196,6 +243,30 @@ export default function Campaigns() {
   const [selectedContacts, setSelectedContacts] = useState(new Set())
   const [campaignToSend, setCampaignToSend] = useState(null)
   const [sendInterval, setSendInterval] = useState(0)
+  const [focusedField, setFocusedField] = useState('')
+  const [hoveredField, setHoveredField] = useState('')
+  const [isPrimaryHovered, setIsPrimaryHovered] = useState(false)
+  const [isPrimaryPressed, setIsPrimaryPressed] = useState(false)
+  const [isUploadHovered, setIsUploadHovered] = useState(false)
+  const [isUploadPressed, setIsUploadPressed] = useState(false)
+
+  function getAnimatedInputStyle(field) {
+    const isFocused = focusedField === field
+    const isHovered = hoveredField === field
+    const isActive = isFocused || isHovered
+
+    return {
+      ...inputStyle,
+      border: isActive ? '2px solid #FF6B00' : '2px solid #2a1a0a',
+      boxShadow: isFocused
+        ? '0 0 0 3px #FF6B0033, 0 8px 24px #FF6B001f'
+        : isHovered
+          ? '0 0 0 2px #FF6B0022, 0 5px 16px #FF6B0017'
+          : 'none',
+      transform: isActive ? 'translateY(-1px)' : 'translateY(0)',
+      transition: 'border-color 0.16s ease, box-shadow 0.16s ease, transform 0.12s ease',
+    }
+  }
 
   async function load() {
     try {
@@ -226,16 +297,35 @@ export default function Campaigns() {
     loadContacts()
   }, [])
 
-  async function handleImageUpload(e) {
+  useEffect(() => {
+    const hasRunningCampaign = campaigns.some(c => c.status === 'running')
+    if (!hasRunningCampaign) return
+
+    const intervalId = setInterval(async () => {
+      try {
+        const res = await getCampaigns()
+        setCampaigns(res.data)
+      } catch (err) {
+        console.error(err)
+      }
+    }, 3000)
+
+    return () => clearInterval(intervalId)
+  }, [campaigns])
+
+  async function handleAttachmentUpload(e) {
     const file = e.target.files[0]
     if (!file) return
     setUploading(true)
     try {
-      const res = await uploadImage(file)
+      const res = await uploadAttachment(file)
+      const isImage = (file.type || '').startsWith('image/') || res.data.kind === 'image'
       setForm({ ...form, image_url: res.data.url })
-      setImagePreview(URL.createObjectURL(file))
+      setAttachmentName(res.data.filename || file.name)
+      setAttachmentIsImage(isImage)
+      setImagePreview(isImage ? URL.createObjectURL(file) : null)
     } catch (err) {
-      alert('Erro ao fazer upload da imagem')
+      alert('Erro ao fazer upload do arquivo')
     } finally {
       setUploading(false)
     }
@@ -252,6 +342,8 @@ export default function Campaigns() {
       }
       setForm({ name: '', message: '', image_url: null, email_subject: '', sms_from: '', telegram_signature: '', use_email: false, use_sms: false, use_telegram: false })
       setImagePreview(null)
+      setAttachmentName('')
+      setAttachmentIsImage(false)
       load()
     } catch (err) {
       console.error(err)
@@ -271,7 +363,10 @@ export default function Campaigns() {
       use_sms: campaign.use_sms,
       use_telegram: campaign.use_telegram,
     })
-    setImagePreview(campaign.image_url)
+    const previewAsImage = isImageUrl(campaign.image_url)
+    setAttachmentIsImage(previewAsImage)
+    setAttachmentName(getFileNameFromUrl(campaign.image_url))
+    setImagePreview(previewAsImage ? campaign.image_url : null)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -354,8 +449,13 @@ export default function Campaigns() {
         </div>
         <form onSubmit={handleSubmit}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '14px' }}>
-            <input style={inputStyle} placeholder="Nome da campanha *"
-              value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
+            <input style={getAnimatedInputStyle('name')} placeholder="Nome da campanha *"
+              value={form.name}
+              onMouseEnter={() => setHoveredField('name')}
+              onMouseLeave={() => setHoveredField('')}
+              onFocus={() => setFocusedField('name')}
+              onBlur={() => setFocusedField('')}
+              onChange={e => setForm({ ...form, name: e.target.value })} required />
 
             <RichEditor
               value={form.message}
@@ -365,39 +465,62 @@ export default function Campaigns() {
 
             {form.use_email && (
               <input
-                style={inputStyle}
+                style={getAnimatedInputStyle('email_subject')}
                 placeholder="Assunto do e-mail (opcional)"
                 value={form.email_subject}
+                onMouseEnter={() => setHoveredField('email_subject')}
+                onMouseLeave={() => setHoveredField('')}
+                onFocus={() => setFocusedField('email_subject')}
+                onBlur={() => setFocusedField('')}
                 onChange={e => setForm({ ...form, email_subject: e.target.value })}
               />
             )}
 
             {form.use_sms && (
               <input
-                style={inputStyle}
+                style={getAnimatedInputStyle('sms_from')}
                 placeholder="Remetente do SMS (opcional)"
                 value={form.sms_from}
+                onMouseEnter={() => setHoveredField('sms_from')}
+                onMouseLeave={() => setHoveredField('')}
+                onFocus={() => setFocusedField('sms_from')}
+                onBlur={() => setFocusedField('')}
                 onChange={e => setForm({ ...form, sms_from: e.target.value })}
               />
             )}
 
             {form.use_telegram && (
               <input
-                style={inputStyle}
+                style={getAnimatedInputStyle('telegram_signature')}
                 placeholder="Assinatura do Telegram (opcional)"
                 value={form.telegram_signature}
+                onMouseEnter={() => setHoveredField('telegram_signature')}
+                onMouseLeave={() => setHoveredField('')}
+                onFocus={() => setFocusedField('telegram_signature')}
+                onBlur={() => setFocusedField('')}
                 onChange={e => setForm({ ...form, telegram_signature: e.target.value })}
               />
             )}
 
             {/* Upload */}
             <div style={{ border: '1px dashed #2a1a0a', borderRadius: '8px', padding: '16px', textAlign: 'center' }}>
-              {imagePreview ? (
+              {form.image_url ? (
                 <div>
-                  <img src={imagePreview} alt="Preview" style={{ maxHeight: '120px', borderRadius: '6px', marginBottom: '8px' }} />
+                  {attachmentIsImage ? (
+                    <img src={imagePreview || form.image_url} alt="Preview" style={{ maxHeight: '120px', borderRadius: '6px', marginBottom: '8px' }} />
+                  ) : (
+                    <div style={{ color: '#e5e7eb', marginBottom: '8px', fontSize: '12px', fontFamily: "'Space Mono', monospace" }}>
+                      📄 {attachmentName || 'Arquivo anexado'}
+                    </div>
+                  )}
                   <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                    <span style={{ color: '#10b981', fontSize: '11px', fontFamily: "'Space Mono', monospace" }}>✓ Imagem carregada</span>
-                    <button type="button" onClick={() => { setImagePreview(null); setForm({ ...form, image_url: null }) }}
+                    <span style={{ color: '#10b981', fontSize: '11px', fontFamily: "'Space Mono', monospace" }}>✓ Arquivo carregado</span>
+                    <button type="button" onClick={() => {
+                      setImagePreview(null)
+                      setAttachmentName('')
+                      setAttachmentIsImage(false)
+                      setForm({ ...form, image_url: null })
+                    }}
                       style={{ background: 'transparent', border: 'none', color: '#f87171', fontSize: '11px', cursor: 'pointer', fontFamily: "'Space Mono', monospace" }}>
                       remover
                     </button>
@@ -406,16 +529,43 @@ export default function Campaigns() {
               ) : (
                 <div>
                   <div style={{ color: '#6b7280', fontSize: '12px', marginBottom: '8px', fontFamily: "'Space Mono', monospace" }}>
-                    {uploading ? '⏳ Enviando...' : '📎 Adicionar imagem (opcional)'}
+                    {uploading ? '⏳ Enviando...' : '📎 Adicionar anexo (opcional)'}
                   </div>
-                  <input type="file" accept="image/*" onChange={handleImageUpload}
-                    style={{ display: 'none' }} id="image-upload" disabled={uploading} />
-                  <label htmlFor="image-upload" style={{
-                    background: '#FF6B0022', color: '#FF6B00',
-                    border: '1px solid #FF6B0044', borderRadius: '6px',
-                    padding: '6px 16px', fontSize: '12px', cursor: 'pointer',
-                    fontFamily: "'Space Mono', monospace"
-                  }}>Escolher arquivo</label>
+                  <input type="file" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip,.rar" onChange={handleAttachmentUpload}
+                    style={{ display: 'none' }} id="attachment-upload" disabled={uploading} />
+                  <label htmlFor="attachment-upload" style={{
+                    background: isUploadHovered ? '#FF6B0033' : '#FF6B0022',
+                    color: '#FF6B00',
+                    border: `1px solid ${isUploadHovered ? '#FF6B00' : '#FF6B0044'}`,
+                    borderRadius: '6px',
+                    padding: '6px 16px',
+                    fontSize: '12px',
+                    cursor: uploading ? 'not-allowed' : 'pointer',
+                    fontFamily: "'Space Mono', monospace",
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transform: isUploadPressed
+                      ? 'translateY(1px) scale(0.98)'
+                      : isUploadHovered
+                        ? 'translateY(-1px) scale(1.02)'
+                        : 'translateY(0) scale(1)',
+                    boxShadow: isUploadPressed
+                      ? 'inset 0 0 0 1px rgba(255,107,0,0.5)'
+                      : isUploadHovered
+                        ? '0 6px 18px rgba(255,107,0,0.16)'
+                        : 'none',
+                    transition: 'background 0.14s ease, border-color 0.14s ease, transform 0.12s ease, box-shadow 0.14s ease',
+                    opacity: uploading ? 0.7 : 1,
+                  }}
+                    onMouseEnter={() => !uploading && setIsUploadHovered(true)}
+                    onMouseLeave={() => {
+                      setIsUploadHovered(false)
+                      setIsUploadPressed(false)
+                    }}
+                    onMouseDown={() => !uploading && setIsUploadPressed(true)}
+                    onMouseUp={() => setIsUploadPressed(false)}
+                  >Escolher arquivo</label>
                 </div>
               )}
             </div>
@@ -435,8 +585,27 @@ export default function Campaigns() {
               background: '#FF6B00', color: '#fff', border: 'none',
               borderRadius: '8px', padding: '10px 20px', fontSize: '13px',
               fontWeight: '600', cursor: 'pointer', flex: 1,
-              fontFamily: "'Space Mono', monospace"
-            }}>
+              fontFamily: "'Space Mono', monospace",
+              transform: isPrimaryPressed
+                ? 'translateY(1px) scale(0.99)'
+                : isPrimaryHovered
+                  ? 'translateY(-1px) scale(1.01)'
+                  : 'translateY(0) scale(1)',
+              boxShadow: isPrimaryPressed
+                ? 'inset 0 0 0 2px #ff9a3d66'
+                : isPrimaryHovered
+                  ? '0 8px 22px #FF6B0042'
+                  : '0 6px 18px #FF6B0033',
+              transition: 'transform 0.1s ease, box-shadow 0.14s ease',
+            }}
+              onMouseEnter={() => setIsPrimaryHovered(true)}
+              onMouseDown={() => setIsPrimaryPressed(true)}
+              onMouseUp={() => setIsPrimaryPressed(false)}
+              onMouseLeave={() => {
+                setIsPrimaryHovered(false)
+                setIsPrimaryPressed(false)
+              }}
+            >
               {editingId ? 'Salvar alterações' : 'Criar campanha'}
             </button>
             {editingId && (
@@ -444,6 +613,8 @@ export default function Campaigns() {
                 setEditingId(null)
                 setForm({ name: '', message: '', image_url: null, email_subject: '', sms_from: '', telegram_signature: '', use_email: false, use_sms: false, use_telegram: false })
                 setImagePreview(null)
+                setAttachmentName('')
+                setAttachmentIsImage(false)
               }} style={{
                 background: 'transparent', color: '#9ca3af',
                 border: '2px solid #2a1a0a', borderRadius: '8px',
@@ -463,7 +634,7 @@ export default function Campaigns() {
         </div>
 
         <div style={{ display: 'flex', padding: '10px 16px', borderBottom: '2px solid #2a1a0a' }}>
-          {['Campanha', 'Imagem', 'Canais', 'Status', 'Total', 'Sucesso', 'Disparar', ''].map(h => (
+          {['Campanha', 'Anexo', 'Canais', 'Status', 'Total', 'Sucesso', 'Disparar', ''].map(h => (
             <div key={h} style={{ flex: 1, color: '#4b5563', fontSize: '11px', fontWeight: '500', textTransform: 'uppercase', fontFamily: "'Space Mono', monospace" }}>{h}</div>
           ))}
         </div>
@@ -485,7 +656,18 @@ export default function Campaigns() {
             </div>
             <div style={{ flex: 1 }}>
               {c.image_url ? (
-                <img src={c.image_url} alt="img" style={{ width: '32px', height: '32px', borderRadius: '4px', objectFit: 'cover' }} />
+                isImageUrl(c.image_url) ? (
+                  <img src={c.image_url} alt="img" style={{ width: '32px', height: '32px', borderRadius: '4px', objectFit: 'cover' }} />
+                ) : (
+                  <a
+                    href={c.image_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ color: '#FF6B00', fontSize: '11px', fontFamily: "'Space Mono', monospace" }}
+                  >
+                    📄 arquivo
+                  </a>
+                )
               ) : (
                 <span style={{ color: '#4b5563', fontSize: '11px', fontFamily: "'Space Mono', monospace" }}>—</span>
               )}
@@ -499,16 +681,45 @@ export default function Campaigns() {
             <div style={{ flex: 1, color: '#9ca3af', fontSize: '13px', fontFamily: "'Space Mono', monospace" }}>{c.total}</div>
             <div style={{ flex: 1, color: '#10b981', fontSize: '13px', fontFamily: "'Space Mono', monospace" }}>{c.success}</div>
             <div style={{ flex: 1 }}>
-              <button onClick={() => handleSend(c.id)}
+              <button
+                onClick={() => handleSend(c.id)}
                 disabled={sending === c.id || c.status === 'running'}
                 style={{
                   background: sending === c.id ? '#2a1a0a' : '#FF6B0022',
                   color: '#FF6B00', border: '1px solid #FF6B0044',
                   borderRadius: '6px', padding: '4px 12px',
-                  fontSize: '11px', fontWeight: '600', cursor: 'pointer',
-                  transition: 'all 0.2s', opacity: c.status === 'running' ? 0.5 : 1,
-                  fontFamily: "'Space Mono', monospace"
-                }}>
+                  fontSize: '11px', fontWeight: '600',
+                  cursor: sending === c.id || c.status === 'running' ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.12s ease',
+                  opacity: c.status === 'running' ? 0.5 : 1,
+                  fontFamily: "'Space Mono', monospace",
+                  transform: sending === c.id ? 'translateY(1px) scale(0.98)' : 'translateY(0) scale(1)',
+                  boxShadow: sending === c.id ? 'inset 0 0 0 1px #FF6B0077' : 'none',
+                }}
+                onMouseEnter={e => {
+                  if (sending === c.id || c.status === 'running') return
+                  e.currentTarget.style.background = '#FF6B0033'
+                  e.currentTarget.style.borderColor = '#FF6B00'
+                  e.currentTarget.style.transform = 'translateY(-1px) scale(1.02)'
+                  e.currentTarget.style.boxShadow = '0 4px 12px #FF6B0022'
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = sending === c.id ? '#2a1a0a' : '#FF6B0022'
+                  e.currentTarget.style.borderColor = '#FF6B0044'
+                  e.currentTarget.style.transform = sending === c.id ? 'translateY(1px) scale(0.98)' : 'translateY(0) scale(1)'
+                  e.currentTarget.style.boxShadow = sending === c.id ? 'inset 0 0 0 1px #FF6B0077' : 'none'
+                }}
+                onMouseDown={e => {
+                  if (sending === c.id || c.status === 'running') return
+                  e.currentTarget.style.transform = 'translateY(1px) scale(0.98)'
+                  e.currentTarget.style.boxShadow = 'inset 0 0 0 1px #FF6B0077'
+                }}
+                onMouseUp={e => {
+                  if (sending === c.id || c.status === 'running') return
+                  e.currentTarget.style.transform = 'translateY(-1px) scale(1.02)'
+                  e.currentTarget.style.boxShadow = '0 4px 12px #FF6B0022'
+                }}
+              >
                 {sending === c.id ? '...' : '▶ Disparar'}
               </button>
             </div>

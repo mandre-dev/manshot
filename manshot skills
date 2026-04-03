@@ -1,7 +1,7 @@
 cd ~/manshot
-source venv/bin/activate
+deactivate 2>/dev/null || true
+source .venv/bin/activate
 uvicorn api.main:app --reload
-
 
 cd ~/manshot
 source venv/bin/activate
@@ -21,7 +21,16 @@ próximos passos
 
 - editar texto (negrito, italico e etc) ver se funciona -v
 - importar contatos por planilha ou outra forma -v
-- melhorias na interface
-- CRUD
+- melhorias na interface - v
+- funçoes de canais - v
+- tempo de envio por mensagem -v
+- Sistema de login - v
 
 senha app google: hjdx ivia sngh gvtc
+
+-------------------
+
+Login Manshot
+
+Email: admin@manshot.local
+Senha: admin123
