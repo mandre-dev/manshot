@@ -1,43 +1,6 @@
-"""
-main.py — Manshot
-Entrada principal da API FastAPI.
-Acesse /docs para ver a documentação automática.
-"""
-
-from fastapi import FastAPI
-from api.database import engine, Base
-from api.routes import contacts_router, campaigns_router
-
-# Cria as tabelas no banco de dados automaticamente
-Base.metadata.create_all(bind=engine)
-
-app = FastAPI(
-    title="Manshot API",
-    description="Ferramenta de disparo em massa multi-canal — Email, SMS e Telegram",
-    version="1.0.0"
-)
-
-# Registra as rotas
-app.include_router(contacts_router)
-app.include_router(campaigns_router)
-
-
-@app.get("/")
-def root():
-    return {
-        "app": "Manshot",
-        "version": "1.0.0",
-        "docs": "/docs",
-        "status": "online"
-    }
-"""
-main.py — Manshot
-Entrada principal da API FastAPI.
-Acesse /docs para ver a documentação automática.
-"""
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from api.database import engine, Base
 from api.routes import contacts_router, campaigns_router, auth_router
 from api.upload import router as upload_router
@@ -48,7 +11,7 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(
     title="Manshot API",
     description="Ferramenta de disparo em massa multi-canal — Email, SMS e Telegram",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 # CORS — permite o dashboard React fazer requisições para a API
@@ -65,13 +28,9 @@ app.include_router(contacts_router)
 app.include_router(campaigns_router)
 app.include_router(upload_router)
 app.include_router(auth_router)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 
 @app.get("/")
 def root():
-    return {
-        "app": "Manshot",
-        "version": "1.0.0",
-        "docs": "/docs",
-        "status": "online"
-    }
+    return {"app": "Manshot", "version": "1.0.0", "docs": "/docs", "status": "online"}
