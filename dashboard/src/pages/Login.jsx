@@ -23,6 +23,7 @@ export default function Login() {
   const [error, setError] = useState('')
   const [isRegisterMode, setIsRegisterMode] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isPrimaryPressed, setIsPrimaryPressed] = useState(false)
   const [isSecondaryPressed, setIsSecondaryPressed] = useState(false)
   const [focusedField, setFocusedField] = useState('')
@@ -44,7 +45,7 @@ export default function Login() {
       if (!form.password) return 'neutral'
 
       if (isRegisterMode) {
-        return form.password.length >= 6 ? 'valid' : 'invalid'
+        return 'neutral'
       }
 
       if (credentialStatus === 'valid') {
@@ -59,8 +60,7 @@ export default function Login() {
     }
 
     if (field === 'confirmPassword') {
-      if (!isRegisterMode || !confirmPassword) return 'neutral'
-      return confirmPassword === form.password && form.password.length >= 6 ? 'valid' : 'invalid'
+      return 'neutral'
     }
 
     return 'neutral'
@@ -246,16 +246,48 @@ export default function Login() {
           </div>
 
           {isRegisterMode && (
-            <input
-              type={showPassword ? 'text' : 'password'}
-              placeholder="Confirmar senha"
-              required
-              value={confirmPassword}
-              onChange={e => setConfirmPassword(e.target.value)}
-              onFocus={() => setFocusedField('confirmPassword')}
-              onBlur={() => setFocusedField('')}
-              style={getInputFocusStyle('confirmPassword')}
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showConfirmPassword ? 'text' : 'password'}
+                placeholder="Confirmar senha"
+                required
+                value={confirmPassword}
+                onChange={e => setConfirmPassword(e.target.value)}
+                onFocus={() => setFocusedField('confirmPassword')}
+                onBlur={() => setFocusedField('')}
+                style={getInputFocusStyle('confirmPassword', { paddingRight: '46px' })}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(prev => !prev)}
+                aria-label={showConfirmPassword ? 'Ocultar confirmação de senha' : 'Ver confirmação de senha'}
+                style={{
+                  position: 'absolute',
+                  right: '10px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: '#1a1208',
+                  border: '1px solid #2a1a0a',
+                  borderRadius: '6px',
+                  padding: '4px',
+                  cursor: 'pointer',
+                  color: '#FF6B00',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = '#2a1a0a'
+                  e.currentTarget.style.borderColor = '#FF6B0044'
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = '#1a1208'
+                  e.currentTarget.style.borderColor = '#2a1a0a'
+                }}
+              >
+                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           )}
 
           {error && (
