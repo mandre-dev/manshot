@@ -23,6 +23,21 @@ export default function Login() {
   const [error, setError] = useState('')
   const [isRegisterMode, setIsRegisterMode] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [isPrimaryPressed, setIsPrimaryPressed] = useState(false)
+  const [isSecondaryPressed, setIsSecondaryPressed] = useState(false)
+  const [focusedField, setFocusedField] = useState('')
+
+  function getInputFocusStyle(field, extraStyle = {}) {
+    const isFocused = focusedField === field
+    return {
+      ...inputStyle,
+      ...extraStyle,
+      border: isFocused ? '2px solid #FF6B00' : '2px solid #2a1a0a',
+      boxShadow: isFocused ? '0 0 0 3px #FF6B0033, 0 8px 24px #FF6B001f' : 'none',
+      transform: isFocused ? 'translateY(-1px)' : 'translateY(0)',
+      transition: 'border-color 0.16s ease, box-shadow 0.16s ease, transform 0.12s ease'
+    }
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -90,7 +105,9 @@ export default function Login() {
             required
             value={form.email}
             onChange={e => setForm({ ...form, email: e.target.value })}
-            style={inputStyle}
+            onFocus={() => setFocusedField('email')}
+            onBlur={() => setFocusedField('')}
+            style={getInputFocusStyle('email')}
           />
 
           <div style={{ position: 'relative' }}>
@@ -100,7 +117,9 @@ export default function Login() {
               required
               value={form.password}
               onChange={e => setForm({ ...form, password: e.target.value })}
-              style={{ ...inputStyle, paddingRight: '46px' }}
+              onFocus={() => setFocusedField('password')}
+              onBlur={() => setFocusedField('')}
+              style={getInputFocusStyle('password', { paddingRight: '46px' })}
             />
             <button
               type="button"
@@ -141,7 +160,9 @@ export default function Login() {
               required
               value={confirmPassword}
               onChange={e => setConfirmPassword(e.target.value)}
-              style={inputStyle}
+              onFocus={() => setFocusedField('confirmPassword')}
+              onBlur={() => setFocusedField('')}
+              style={getInputFocusStyle('confirmPassword')}
             />
           )}
 
@@ -161,8 +182,14 @@ export default function Login() {
             fontWeight: '600',
             cursor: 'pointer',
             opacity: loading ? 0.7 : 1,
-            fontFamily: "'Space Mono', monospace"
-          }}>
+            fontFamily: "'Space Mono', monospace",
+            transform: isPrimaryPressed ? 'scale(0.985)' : 'scale(1)',
+            boxShadow: isPrimaryPressed ? 'inset 0 0 0 2px #ff9a3d66' : '0 6px 18px #FF6B0033',
+            transition: 'transform 0.08s ease, box-shadow 0.12s ease'
+          }}
+            onMouseDown={() => setIsPrimaryPressed(true)}
+            onMouseUp={() => setIsPrimaryPressed(false)}
+            onMouseLeave={() => setIsPrimaryPressed(false)}>
             {loading ? (isRegisterMode ? 'Criando conta...' : 'Entrando...') : (isRegisterMode ? 'Criar conta' : 'Entrar')}
           </button>
 
@@ -170,15 +197,23 @@ export default function Login() {
             type="button"
             onClick={handleModeToggle}
             style={{
-              background: 'transparent',
-              color: '#9ca3af',
-              border: '1px solid #2a1a0a',
+              background: isSecondaryPressed ? '#1f160f' : 'transparent',
+              color: isSecondaryPressed ? '#ffd8bd' : '#9ca3af',
+              border: `1px solid ${isSecondaryPressed ? '#FF6B00' : '#2a1a0a'}`,
               borderRadius: '8px',
               padding: '10px 12px',
               fontSize: '12px',
               cursor: 'pointer',
-              fontFamily: "'Space Mono', monospace"
+              fontFamily: "'Space Mono', monospace",
+              transform: isSecondaryPressed ? 'translateY(1px) scale(0.99)' : 'translateY(0) scale(1)',
+              boxShadow: isSecondaryPressed
+                ? 'inset 0 0 0 1px #FF6B0088'
+                : '0 0 0 0 #00000000',
+              transition: 'all 0.12s ease'
             }}
+            onMouseDown={() => setIsSecondaryPressed(true)}
+            onMouseUp={() => setIsSecondaryPressed(false)}
+            onMouseLeave={() => setIsSecondaryPressed(false)}
           >
             {isRegisterMode ? 'Já tenho conta' : 'Criar nova conta'}
           </button>
