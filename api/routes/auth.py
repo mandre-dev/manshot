@@ -8,7 +8,13 @@ from sqlalchemy.orm import Session
 
 from api.database import get_db
 from api.models.user import User
-from api.schemas.auth import LoginRequest, RegisterRequest, TokenResponse, UserResponse
+from api.schemas.auth import (
+    CredentialsCheckResponse,
+    LoginRequest,
+    RegisterRequest,
+    TokenResponse,
+    UserResponse,
+)
 from core.auth import (
     create_access_token,
     get_current_user,
@@ -20,32 +26,22 @@ from core.config import settings
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
+def has_valid_credentials(email: str, password: str, db: Session) -> bool:
+    if email == settings.ADMIN_EMAIL.lower() and password == settings.ADMIN_PASSWORD:
+        return True
+
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        return False
+
+    return verify_password(password, user.password_hash)
+
+
 @router.post("/login", response_model=TokenResponse)
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
     email = payload.email.strip().lower()
 
-    # Mantem compatibilidade com o login admin legado, mesmo com usuarios no banco.
-    if (
-        email == settings.ADMIN_EMAIL.lower()
-        and payload.password == settings.ADMIN_PASSWORD
-    ):
-        token = create_access_token(email)
-        return TokenResponse(access_token=token)
-
-    user = db.query(User).filter(User.email == email).first()
-    if user:
-        if not verify_password(payload.password, user.password_hash):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Credenciais inválidas",
-            )
-        token = create_access_token(email)
-        return TokenResponse(access_token=token)
-
-    if (
-        email != settings.ADMIN_EMAIL.lower()
-        or payload.password != settings.ADMIN_PASSWORD
-    ):
+    if not has_valid_credentials(email, payload.password, db):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciais inválidas",
@@ -53,6 +49,14 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
 
     token = create_access_token(email)
     return TokenResponse(access_token=token)
+
+
+@router.post("/check-credentials", response_model=CredentialsCheckResponse)
+def check_credentials(payload: LoginRequest, db: Session = Depends(get_db)):
+    email = payload.email.strip().lower()
+    return CredentialsCheckResponse(
+        valid=has_valid_credentials(email, payload.password, db)
+    )
 
 
 @router.post(
