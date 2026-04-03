@@ -291,7 +291,7 @@ export default function Login() {
             style={{
               background: isSecondaryPressed ? '#1f160f' : 'transparent',
               color: isSecondaryPressed ? '#ffd8bd' : '#9ca3af',
-              border: `1px solid ${isSecondaryPressed ? '#FF6B00' : '#2a1a0a'}`,
+              border: '2px solid #FF6B00',
               borderRadius: '8px',
               padding: '10px 12px',
               fontSize: '12px',
@@ -299,7 +299,7 @@ export default function Login() {
               fontFamily: "'Space Mono', monospace",
               transform: isSecondaryPressed ? 'translateY(1px) scale(0.99)' : 'translateY(0) scale(1)',
               boxShadow: isSecondaryPressed
-                ? 'inset 0 0 0 1px #FF6B0088'
+                ? 'inset 0 0 0 2px #FF6B0088'
                 : '0 0 0 0 #00000000',
               transition: 'all 0.12s ease'
             }}
