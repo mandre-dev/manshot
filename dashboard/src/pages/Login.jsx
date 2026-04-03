@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
-import { login, saveToken } from '../services/api'
+import { login, register, saveToken } from '../services/api'
 
 const inputStyle = {
   background: '#1a1208',
@@ -18,24 +18,45 @@ const inputStyle = {
 export default function Login() {
   const navigate = useNavigate()
   const [form, setForm] = useState({ email: '', password: '' })
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [isRegisterMode, setIsRegisterMode] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
 
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
+
+    if (isRegisterMode && form.password !== confirmPassword) {
+      setError('As senhas não conferem')
+      return
+    }
+
     setLoading(true)
 
     try {
-      const res = await login(form.email, form.password)
+      const res = isRegisterMode
+        ? await register(form.email, form.password)
+        : await login(form.email, form.password)
       saveToken(res.data.access_token)
       navigate('/', { replace: true })
-    } catch {
-      setError('E-mail ou senha inválidos')
+    } catch (err) {
+      const apiMessage = err?.response?.data?.detail
+      if (typeof apiMessage === 'string' && apiMessage.trim()) {
+        setError(apiMessage)
+      } else {
+        setError(isRegisterMode ? 'Não foi possível criar sua conta' : 'E-mail ou senha inválidos')
+      }
     } finally {
       setLoading(false)
     }
+  }
+
+  function handleModeToggle() {
+    setIsRegisterMode(prev => !prev)
+    setError('')
+    setConfirmPassword('')
   }
 
   return (
@@ -59,7 +80,7 @@ export default function Login() {
           Acesso seguro
         </div>
         <h1 style={{ color: '#fff', fontSize: '24px', margin: '0 0 20px 0', fontFamily: "'Fira Code', monospace" }}>
-          Login Manshot
+          {isRegisterMode ? 'Criar Conta Manshot' : 'Login Manshot'}
         </h1>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -113,6 +134,17 @@ export default function Login() {
             </button>
           </div>
 
+          {isRegisterMode && (
+            <input
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Confirmar senha"
+              required
+              value={confirmPassword}
+              onChange={e => setConfirmPassword(e.target.value)}
+              style={inputStyle}
+            />
+          )}
+
           {error && (
             <div style={{ color: '#f87171', fontSize: '12px', fontFamily: "'Space Mono', monospace" }}>
               {error}
@@ -131,7 +163,24 @@ export default function Login() {
             opacity: loading ? 0.7 : 1,
             fontFamily: "'Space Mono', monospace"
           }}>
-            {loading ? 'Entrando...' : 'Entrar'}
+            {loading ? (isRegisterMode ? 'Criando conta...' : 'Entrando...') : (isRegisterMode ? 'Criar conta' : 'Entrar')}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleModeToggle}
+            style={{
+              background: 'transparent',
+              color: '#9ca3af',
+              border: '1px solid #2a1a0a',
+              borderRadius: '8px',
+              padding: '10px 12px',
+              fontSize: '12px',
+              cursor: 'pointer',
+              fontFamily: "'Space Mono', monospace"
+            }}
+          >
+            {isRegisterMode ? 'Já tenho conta' : 'Criar nova conta'}
           </button>
         </form>
       </div>
