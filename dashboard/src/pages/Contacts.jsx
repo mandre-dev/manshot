@@ -3,6 +3,9 @@
 import { useEffect, useState, useRef } from 'react'
 import { getContacts, createContact, updateContact, deleteContact } from '../services/api'
 import * as XLSX from 'xlsx'
+import { useGoogleLogin } from '@react-oauth/google'
+import excelLogo from '../assets/excel-logo.svg'
+import googleContactsLogo from '../assets/google-contacts-logo.svg'
 
 const inputStyle = {
   background: '#1a1208',
@@ -152,6 +155,10 @@ export default function Contacts() {
   const [isAddPressed, setIsAddPressed] = useState(false)
   const [isImportHovered, setIsImportHovered] = useState(false)
   const [isImportPressed, setIsImportPressed] = useState(false)
+  const [isImportMenuOpen, setIsImportMenuOpen] = useState(false)
+  const [isImportOptionHovered, setIsImportOptionHovered] = useState('')
+  const fileInputRef = useRef(null)
+  const importMenuRef = useRef(null)
 
   function getAnimatedInputStyle(field) {
     const isFocused = focusedField === field
@@ -183,6 +190,17 @@ export default function Contacts() {
 
   useEffect(() => {
     load()
+  }, [])
+
+  useEffect(() => {
+    function handleOutsideClick(e) {
+      if (importMenuRef.current && !importMenuRef.current.contains(e.target)) {
+        setIsImportMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleOutsideClick)
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
   }, [])
 
   async function handleSubmit(e) {
@@ -249,6 +267,60 @@ export default function Contacts() {
     }
     reader.readAsArrayBuffer(file)
   }
+
+  const googleImportLogin = useGoogleLogin({
+    scope: 'https://www.googleapis.com/auth/contacts.readonly',
+    onSuccess: async (tokenResponse) => {
+      try {
+        const res = await fetch(
+          'https://people.googleapis.com/v1/people/me/connections?personFields=names,emailAddresses,phoneNumbers&pageSize=200',
+          {
+            headers: {
+              Authorization: `Bearer ${tokenResponse.access_token}`,
+            },
+          }
+        )
+
+        if (!res.ok) {
+          throw new Error('Falha ao buscar contatos do Google')
+        }
+
+        const data = await res.json()
+        const people = data.connections || []
+
+        let imported = 0
+        for (const person of people) {
+          const name = person.names?.[0]?.displayName || ''
+          const email = person.emailAddresses?.[0]?.value || ''
+          const phone = person.phoneNumbers?.[0]?.value || ''
+
+          if (!name && !email && !phone) continue
+
+          try {
+            await createContact({
+              name: name || email || phone || 'Contato Google',
+              email,
+              phone,
+              telegram_id: '',
+            })
+            imported += 1
+          } catch (err) {
+            console.error('Erro ao importar contato Google:', err)
+          }
+        }
+
+        alert(`${imported} contatos importados do Google com sucesso!`)
+        setIsImportMenuOpen(false)
+        load()
+      } catch (err) {
+        console.error(err)
+        alert('Nao foi possivel importar contatos do Google.')
+      }
+    },
+    onError: () => {
+      alert('Falha ao autenticar com Google.')
+    },
+  })
 
   return (
     <div>
@@ -419,16 +491,19 @@ export default function Contacts() {
             </span>
           </div>
 
-          <div>
+          <div ref={importMenuRef} style={{ position: 'relative' }}>
             <input
               type="file"
               accept=".xlsx,.xls,.csv,.ods"
               onChange={handleImportExcel}
               style={{ display: 'none' }}
               id="excel-upload"
+              ref={fileInputRef}
             />
-            <label
-              htmlFor="excel-upload"
+
+            <button
+              type="button"
+              onClick={() => setIsImportMenuOpen((prev) => !prev)}
               style={{
                 background: isImportHovered ? '#FF6B0033' : '#FF6B0022',
                 color: '#FF6B00',
@@ -438,7 +513,9 @@ export default function Contacts() {
                 fontSize: '11px',
                 cursor: 'pointer',
                 fontFamily: "'Space Mono', monospace",
-                display: 'inline-block',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
                 transform: isImportPressed
                   ? 'translateY(1px) scale(0.99)'
                   : isImportHovered
@@ -459,8 +536,75 @@ export default function Contacts() {
                 setIsImportPressed(false)
               }}
             >
-              📥 Importar Excel
-            </label>
+              📥 Importar contatos
+            </button>
+
+            {isImportMenuOpen && (
+              <div
+                style={{
+                  position: 'absolute',
+                  right: 0,
+                  top: '110%',
+                  background: '#111827',
+                  border: '2px solid #2a1a0a',
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                  zIndex: 200,
+                  minWidth: '190px',
+                  boxShadow: '0 10px 24px rgba(0,0,0,0.45)',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    fileInputRef.current?.click()
+                    setIsImportMenuOpen(false)
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    background: isImportOptionHovered === 'excel' ? '#1a1208' : 'transparent',
+                    border: 'none',
+                    borderBottom: '1px solid #2a1a0a',
+                    color: '#e5e7eb',
+                    textAlign: 'left',
+                    fontSize: '12px',
+                    fontFamily: "'Space Mono', monospace",
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={() => setIsImportOptionHovered('excel')}
+                  onMouseLeave={() => setIsImportOptionHovered('')}
+                >
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                    <img src={excelLogo} alt="Excel" style={{ width: '20px', height: '20px', borderRadius: '3px' }} />
+                    <span>Importar do Excel</span>
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => googleImportLogin()}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    background: isImportOptionHovered === 'google' ? '#1a1208' : 'transparent',
+                    border: 'none',
+                    color: '#e5e7eb',
+                    textAlign: 'left',
+                    fontSize: '12px',
+                    fontFamily: "'Space Mono', monospace",
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={() => setIsImportOptionHovered('google')}
+                  onMouseLeave={() => setIsImportOptionHovered('')}
+                >
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                    <img src={googleContactsLogo} alt="Google Contatos" style={{ width: '20px', height: '20px', borderRadius: '3px' }} />
+                    <span>Importar do Google</span>
+                  </span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
