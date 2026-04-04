@@ -20,6 +20,10 @@ export default function Navbar() {
   const [isAccountHovered, setIsAccountHovered] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isConfirmLogoutOpen, setIsConfirmLogoutOpen] = useState(false)
+  const [isLogoutBtnHovered, setIsLogoutBtnHovered] = useState(false)
+  const [isLogoutBtnPressed, setIsLogoutBtnPressed] = useState(false)
+  const [isCancelBtnHovered, setIsCancelBtnHovered] = useState(false)
+  const [isCancelBtnPressed, setIsCancelBtnPressed] = useState(false)
 
   useEffect(() => {
     let mounted = true
@@ -314,14 +318,17 @@ export default function Navbar() {
                   fontSize: '14px',
                   fontWeight: '600',
                   cursor: 'pointer',
-                  transition: 'all 0.15s ease',
+                  transition: 'all 0.18s ease',
+                  transform: isLogoutBtnPressed ? 'translateY(1px) scale(0.98)' : isLogoutBtnHovered ? 'translateY(-1px) scale(1.02)' : 'translateY(0) scale(1)',
+                  boxShadow: isLogoutBtnHovered ? '0 8px 24px rgba(255,107,0,0.3)' : 'none',
                 }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.background = '#FF5500'
+                onMouseEnter={() => setIsLogoutBtnHovered(true)}
+                onMouseLeave={() => {
+                  setIsLogoutBtnHovered(false)
+                  setIsLogoutBtnPressed(false)
                 }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.background = '#FF6B00'
-                }}
+                onMouseDown={() => setIsLogoutBtnPressed(true)}
+                onMouseUp={() => setIsLogoutBtnPressed(false)}
               >
                 Sair
               </button>
@@ -329,23 +336,24 @@ export default function Navbar() {
                 onClick={cancelLogout}
                 style={{
                   padding: '12px 16px',
-                  background: 'transparent',
-                  color: '#9ca3af',
+                  background: isCancelBtnHovered ? '#1a1208' : 'transparent',
+                  color: isCancelBtnPressed ? '#FF6B00' : isCancelBtnHovered ? '#e5e7eb' : '#9ca3af',
                   border: '1px solid #2a1a0a',
                   borderRadius: '24px',
                   fontSize: '14px',
                   fontWeight: '600',
                   cursor: 'pointer',
-                  transition: 'all 0.15s ease',
+                  transition: 'all 0.18s ease',
+                  transform: isCancelBtnPressed ? 'translateY(1px) scale(0.98)' : isCancelBtnHovered ? 'translateY(-1px) scale(1.02)' : 'translateY(0) scale(1)',
+                  boxShadow: isCancelBtnHovered ? '0 8px 24px rgba(255,107,0,0.15)' : 'none',
                 }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.background = '#1a1208'
-                  e.currentTarget.style.color = '#e5e7eb'
+                onMouseEnter={() => setIsCancelBtnHovered(true)}
+                onMouseLeave={() => {
+                  setIsCancelBtnHovered(false)
+                  setIsCancelBtnPressed(false)
                 }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.background = 'transparent'
-                  e.currentTarget.style.color = '#9ca3af'
-                }}
+                onMouseDown={() => setIsCancelBtnPressed(true)}
+                onMouseUp={() => setIsCancelBtnPressed(false)}
               >
                 Cancelar
               </button>
