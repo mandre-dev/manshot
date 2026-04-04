@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { UserCircle2, LogOut } from 'lucide-react'
+import { UserCircle2, LogOut, FileText } from 'lucide-react'
 import logo from '../assets/logo-manshot.png'
 import { getMe } from '../services/api'
 
@@ -19,6 +19,7 @@ export default function Navbar() {
   const [accountEmail, setAccountEmail] = useState('Carregando conta...')
   const [isAccountHovered, setIsAccountHovered] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isTermsOpen, setIsTermsOpen] = useState(false)
   const [isConfirmLogoutOpen, setIsConfirmLogoutOpen] = useState(false)
   const [isLogoutBtnHovered, setIsLogoutBtnHovered] = useState(false)
   const [isLogoutBtnPressed, setIsLogoutBtnPressed] = useState(false)
@@ -63,6 +64,11 @@ export default function Navbar() {
     setIsMenuOpen(false)
   }
 
+  const handleTermsClick = () => {
+    setIsTermsOpen(true)
+    setIsMenuOpen(false)
+  }
+
   const confirmLogout = () => {
     localStorage.removeItem('token')
     setIsConfirmLogoutOpen(false)
@@ -71,6 +77,10 @@ export default function Navbar() {
 
   const cancelLogout = () => {
     setIsConfirmLogoutOpen(false)
+  }
+
+  const closeTerms = () => {
+    setIsTermsOpen(false)
   }
 
   return (
@@ -208,6 +218,34 @@ export default function Navbar() {
                 }
               }
             `}</style>
+            <button
+              onClick={handleTermsClick}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                background: 'transparent',
+                border: 'none',
+                borderBottom: '1px solid #2a1a0a',
+                color: '#d1d5db',
+                fontSize: '13px',
+                fontWeight: '500',
+                textAlign: 'left',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = '#1a1208'
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = 'transparent'
+              }}
+            >
+              <FileText size={16} />
+              <span>Termos e politicas</span>
+            </button>
             <button
               onClick={handleLogoutClick}
               style={{
@@ -356,6 +394,98 @@ export default function Navbar() {
                 onMouseUp={() => setIsCancelBtnPressed(false)}
               >
                 Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Terms and Policies Modal */}
+      {isTermsOpen && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.6)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 2100,
+          animation: 'fadeInOverlay 0.2s ease',
+        }}>
+          <div style={{
+            background: '#131a27',
+            border: '1px solid #2a1a0a',
+            borderRadius: '16px',
+            padding: '24px',
+            maxWidth: '560px',
+            width: '92%',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.7)',
+            animation: 'slideInModal 0.2s ease',
+          }}>
+            <h2 style={{
+              color: '#e5e7eb',
+              fontSize: '20px',
+              fontWeight: '600',
+              marginBottom: '10px',
+              lineHeight: '1.3',
+            }}>
+              Termos e Politicas do Manshot
+            </h2>
+
+            <p style={{ color: '#9ca3af', fontSize: '13px', lineHeight: '1.6', marginBottom: '12px' }}>
+              Ao utilizar o Manshot, voce concorda com as diretrizes abaixo para uso responsavel da plataforma.
+            </p>
+
+            <div style={{
+              border: '1px solid #2a1a0a',
+              borderRadius: '10px',
+              padding: '12px 14px',
+              background: '#101622',
+              maxHeight: '280px',
+              overflowY: 'auto',
+              marginBottom: '14px',
+            }}>
+              <p style={{ color: '#d1d5db', fontSize: '13px', lineHeight: '1.55', marginBottom: '10px' }}>
+                1. Privacidade: seus dados de contatos e campanhas sao tratados para operacao da conta e nao devem ser compartilhados sem autorizacao.
+              </p>
+              <p style={{ color: '#d1d5db', fontSize: '13px', lineHeight: '1.55', marginBottom: '10px' }}>
+                2. Boas praticas: e proibido o uso para spam, fraude, conteudo abusivo ou qualquer acao que viole leis locais.
+              </p>
+              <p style={{ color: '#d1d5db', fontSize: '13px', lineHeight: '1.55', marginBottom: '10px' }}>
+                3. Responsabilidade: cada usuario e responsavel pelas mensagens enviadas e pelo consentimento dos destinatarios.
+              </p>
+              <p style={{ color: '#d1d5db', fontSize: '13px', lineHeight: '1.55', marginBottom: '10px' }}>
+                4. Seguranca da conta: mantenha credenciais em sigilo e reporte acessos suspeitos imediatamente.
+              </p>
+              <p style={{ color: '#d1d5db', fontSize: '13px', lineHeight: '1.55', marginBottom: 0 }}>
+                5. Atualizacoes: estes termos podem ser ajustados para melhorias do servico e conformidade legal.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                onClick={closeTerms}
+                style={{
+                  padding: '10px 16px',
+                  background: '#FF6B00',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '22px',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.18s ease',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = '#FF5500'
+                  e.currentTarget.style.transform = 'translateY(-1px) scale(1.01)'
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = '#FF6B00'
+                  e.currentTarget.style.transform = 'translateY(0) scale(1)'
+                }}
+              >
+                Fechar
               </button>
             </div>
           </div>
