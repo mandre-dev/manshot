@@ -19,6 +19,7 @@ export default function Navbar() {
   const [accountEmail, setAccountEmail] = useState('Carregando conta...')
   const [isAccountHovered, setIsAccountHovered] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isConfirmLogoutOpen, setIsConfirmLogoutOpen] = useState(false)
 
   useEffect(() => {
     let mounted = true
@@ -53,10 +54,19 @@ export default function Navbar() {
     }
   }, [isMenuOpen])
 
-  const handleLogout = () => {
-    localStorage.removeItem('token')
+  const handleLogoutClick = () => {
+    setIsConfirmLogoutOpen(true)
     setIsMenuOpen(false)
+  }
+
+  const confirmLogout = () => {
+    localStorage.removeItem('token')
+    setIsConfirmLogoutOpen(false)
     navigate('/login')
+  }
+
+  const cancelLogout = () => {
+    setIsConfirmLogoutOpen(false)
   }
 
   return (
@@ -195,7 +205,7 @@ export default function Navbar() {
               }
             `}</style>
             <button
-              onClick={handleLogout}
+              onClick={handleLogoutClick}
               style={{
                 width: '100%',
                 padding: '10px 12px',
@@ -227,6 +237,122 @@ export default function Navbar() {
           </div>
         )}
       </div>
+
+      {/* Logout Confirmation Modal */}
+      {isConfirmLogoutOpen && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.6)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 2000,
+          animation: 'fadeInOverlay 0.2s ease',
+        }}>
+          <style>{`
+            @keyframes fadeInOverlay {
+              from {
+                opacity: 0;
+              }
+              to {
+                opacity: 1;
+              }
+            }
+            @keyframes slideInModal {
+              from {
+                opacity: 0;
+                transform: scale(0.95);
+              }
+              to {
+                opacity: 1;
+                transform: scale(1);
+              }
+            }
+          `}</style>
+          <div style={{
+            background: '#131a27',
+            border: '1px solid #2a1a0a',
+            borderRadius: '16px',
+            padding: '32px',
+            maxWidth: '420px',
+            width: '90%',
+            textAlign: 'center',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.7)',
+            animation: 'slideInModal 0.2s ease',
+          }}>
+            <h2 style={{
+              color: '#e5e7eb',
+              fontSize: '20px',
+              fontWeight: '600',
+              marginBottom: '12px',
+              lineHeight: '1.4',
+            }}>
+              Tem certeza de que deseja sair?
+            </h2>
+            <p style={{
+              color: '#9ca3af',
+              fontSize: '14px',
+              marginBottom: '28px',
+              lineHeight: '1.5',
+            }}>
+              Sair do Manshot com {accountEmail}?
+            </p>
+            <div style={{
+              display: 'flex',
+              gap: '12px',
+              flexDirection: 'column',
+            }}>
+              <button
+                onClick={confirmLogout}
+                style={{
+                  padding: '12px 16px',
+                  background: '#FF6B00',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '24px',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = '#FF5500'
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = '#FF6B00'
+                }}
+              >
+                Sair
+              </button>
+              <button
+                onClick={cancelLogout}
+                style={{
+                  padding: '12px 16px',
+                  background: 'transparent',
+                  color: '#9ca3af',
+                  border: '1px solid #2a1a0a',
+                  borderRadius: '24px',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = '#1a1208'
+                  e.currentTarget.style.color = '#e5e7eb'
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'transparent'
+                  e.currentTarget.style.color = '#9ca3af'
+                }}
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </aside>
   )
 }
