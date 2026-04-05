@@ -45,6 +45,7 @@ export default function Login() {
   const [isPasswordToggleHovered, setIsPasswordToggleHovered] = useState(false)
   const [isConfirmToggleHovered, setIsConfirmToggleHovered] = useState(false)
   const [focusedField, setFocusedField] = useState('')
+  const [hoveredField, setHoveredField] = useState('')
   const [hasInvalidCredentials, setHasInvalidCredentials] = useState(false)
   const [credentialStatus, setCredentialStatus] = useState('idle')
 
@@ -86,26 +87,31 @@ export default function Login() {
 
   function getInputFocusStyle(field, extraStyle = {}) {
     const isFocused = focusedField === field
+    const isHovered = hoveredField === field
     const validationState = getFieldValidationState(field)
     const borderColor = validationState === 'valid'
       ? '#22c55e'
       : validationState === 'invalid'
         ? '#ef4444'
-        : isFocused
+        : isFocused || isHovered
           ? '#FF6B00'
           : '#2a1a0a'
     const focusGlow = validationState === 'valid'
       ? '0 0 0 3px #22c55e33, 0 8px 24px #22c55e1f'
       : validationState === 'invalid'
         ? '0 0 0 3px #ef444433, 0 8px 24px #ef44441a'
-        : '0 0 0 3px #FF6B0033, 0 8px 24px #FF6B001f'
+        : isFocused
+          ? '0 0 0 3px #FF6B0033, 0 8px 24px #FF6B001f'
+          : isHovered
+            ? '0 0 0 2px #FF6B0022, 0 6px 18px #FF6B0017'
+            : 'none'
 
     return {
       ...inputStyle,
       ...extraStyle,
       border: `2px solid ${borderColor}`,
-      boxShadow: isFocused || validationState !== 'neutral' ? focusGlow : 'none',
-      transform: isFocused ? 'translateY(-1px)' : 'translateY(0)',
+      boxShadow: validationState !== 'neutral' ? focusGlow : isFocused || isHovered ? focusGlow : 'none',
+      transform: isFocused || isHovered ? 'translateY(-1px)' : 'translateY(0)',
       transition: 'border-color 0.16s ease, box-shadow 0.16s ease, transform 0.12s ease'
     }
   }
@@ -234,6 +240,8 @@ export default function Login() {
               setForm({ ...form, email: e.target.value })
               setHasInvalidCredentials(false)
             }}
+              onMouseEnter={() => setHoveredField('email')}
+              onMouseLeave={() => setHoveredField('')}
             onFocus={() => setFocusedField('email')}
             onBlur={() => setFocusedField('')}
             style={getInputFocusStyle('email')}
@@ -249,6 +257,8 @@ export default function Login() {
                 setForm({ ...form, password: e.target.value })
                 setHasInvalidCredentials(false)
               }}
+              onMouseEnter={() => setHoveredField('password')}
+              onMouseLeave={() => setHoveredField('')}
               onFocus={() => setFocusedField('password')}
               onBlur={() => setFocusedField('')}
               style={getInputFocusStyle('password', { paddingRight: '46px' })}
@@ -297,6 +307,8 @@ export default function Login() {
                 required
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
+                onMouseEnter={() => setHoveredField('confirmPassword')}
+                onMouseLeave={() => setHoveredField('')}
                 onFocus={() => setFocusedField('confirmPassword')}
                 onBlur={() => setFocusedField('')}
                 style={getInputFocusStyle('confirmPassword', { paddingRight: '46px' })}
