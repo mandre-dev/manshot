@@ -35,6 +35,7 @@ export const login = (email, password) => api.post('/auth/login', { email, passw
 export const register = (email, password) => api.post('/auth/register', { email, password })
 export const checkCredentials = (email, password) => api.post('/auth/check-credentials', { email, password })
 export const getMe = () => api.get('/auth/me')
+export const googleLogin = (accessToken) => api.post('/auth/google', { access_token: accessToken })
 
 // ── Contatos ────────────────────────────────────────
 export const getContacts = () => api.get('/contacts/')
