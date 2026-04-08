@@ -2,6 +2,77 @@
 import axios from 'axios'
 
 const TOKEN_KEY = 'manshot_token'
+const ACCOUNT_HISTORY_KEY = 'manshot_accounts'
+
+function readStoredAccounts() {
+  if (typeof window === 'undefined') {
+    return []
+  }
+
+  try {
+    const rawAccounts = localStorage.getItem(ACCOUNT_HISTORY_KEY)
+    const parsedAccounts = rawAccounts ? JSON.parse(rawAccounts) : []
+    return Array.isArray(parsedAccounts) ? parsedAccounts : []
+  } catch {
+    return []
+  }
+}
+
+export function deriveAccountDisplayName(email) {
+  const normalizedEmail = (email || '').trim().toLowerCase()
+  if (!normalizedEmail) {
+    return 'Conta conectada'
+  }
+
+  const localPart = normalizedEmail.split('@')[0] || normalizedEmail
+  const cleanedLocalPart = localPart
+    .replace(/[._-]+/g, ' ')
+    .replace(/([a-zA-Z])([0-9]+)/g, '$1 $2')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if (!cleanedLocalPart) {
+    return 'Conta conectada'
+  }
+
+  return cleanedLocalPart
+    .split(' ')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
+}
+
+export function getStoredAccounts() {
+  return readStoredAccounts()
+}
+
+export function rememberAccount(account) {
+  if (typeof window === 'undefined') {
+    return []
+  }
+
+  const email = (account?.email || '').trim().toLowerCase()
+  if (!email) {
+    return readStoredAccounts()
+  }
+
+  const name = (account?.name || deriveAccountDisplayName(email)).trim() || 'Conta conectada'
+  const nextAccounts = [
+    { email, name },
+    ...readStoredAccounts().filter((item) => item.email !== email),
+  ].slice(0, 5)
+
+  localStorage.setItem(ACCOUNT_HISTORY_KEY, JSON.stringify(nextAccounts))
+  return nextAccounts
+}
+
+export function clearStoredAccounts() {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  localStorage.removeItem(ACCOUNT_HISTORY_KEY)
+}
 
 const api = axios.create({
   baseURL: 'http://127.0.0.1:8000',
