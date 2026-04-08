@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
 import { useGoogleLogin } from '@react-oauth/google'
 import { checkCredentials, getMe, googleLogin, login, rememberAccount, register, saveToken } from '../services/api'
@@ -29,6 +29,7 @@ const inputStyle = {
 
 export default function Login() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [form, setForm] = useState({ email: '', password: '' })
   const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -48,6 +49,16 @@ export default function Login() {
   const [hoveredField, setHoveredField] = useState('')
   const [hasInvalidCredentials, setHasInvalidCredentials] = useState(false)
   const [credentialStatus, setCredentialStatus] = useState('idle')
+
+  useEffect(() => {
+    const prefillEmail = location?.state?.prefillEmail
+    if (!prefillEmail) {
+      return
+    }
+
+    setIsRegisterMode(false)
+    setForm((prev) => ({ ...prev, email: prefillEmail }))
+  }, [location?.state?.prefillEmail])
 
   function isEmailValid(email) {
     const normalized = (email || '').trim()
@@ -159,7 +170,7 @@ export default function Login() {
         ? await register(form.email, form.password)
         : await login(form.email, form.password)
       saveToken(res.data.access_token)
-      rememberAccount({ email: form.email })
+      rememberAccount({ email: form.email, provider: 'local' })
       navigate('/', { replace: true })
     } catch (err) {
       const apiMessage = err?.response?.data?.detail
@@ -194,7 +205,7 @@ export default function Login() {
         const res = await googleLogin(tokenResponse.access_token)
         saveToken(res.data.access_token)
         const me = await getMe()
-        rememberAccount({ email: me?.data?.email || '' })
+        rememberAccount({ email: me?.data?.email || '', provider: 'google' })
         navigate('/', { replace: true })
       } catch (err) {
         const apiMessage = err?.response?.data?.detail

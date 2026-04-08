@@ -4,6 +4,28 @@ import axios from 'axios'
 const TOKEN_KEY = 'manshot_token'
 const ACCOUNT_HISTORY_KEY = 'manshot_accounts'
 
+export function inferAccountProviderByEmail(email) {
+  const normalizedEmail = (email || '').trim().toLowerCase()
+  if (!normalizedEmail) {
+    return 'local'
+  }
+
+  return normalizedEmail.endsWith('@manshot.local') ? 'local' : 'google'
+}
+
+function normalizeStoredAccount(account) {
+  const email = (account?.email || '').trim().toLowerCase()
+  if (!email) {
+    return null
+  }
+
+  const name = (account?.name || deriveAccountDisplayName(email)).trim() || 'Conta conectada'
+  const provider = account?.provider === 'google' || account?.provider === 'local'
+    ? account.provider
+    : inferAccountProviderByEmail(email)
+  return { email, name, provider }
+}
+
 function readStoredAccounts() {
   if (typeof window === 'undefined') {
     return []
@@ -12,7 +34,13 @@ function readStoredAccounts() {
   try {
     const rawAccounts = localStorage.getItem(ACCOUNT_HISTORY_KEY)
     const parsedAccounts = rawAccounts ? JSON.parse(rawAccounts) : []
-    return Array.isArray(parsedAccounts) ? parsedAccounts : []
+    if (!Array.isArray(parsedAccounts)) {
+      return []
+    }
+
+    return parsedAccounts
+      .map(normalizeStoredAccount)
+      .filter(Boolean)
   } catch {
     return []
   }
@@ -57,8 +85,11 @@ export function rememberAccount(account) {
   }
 
   const name = (account?.name || deriveAccountDisplayName(email)).trim() || 'Conta conectada'
+  const provider = account?.provider === 'google' || account?.provider === 'local'
+    ? account.provider
+    : inferAccountProviderByEmail(email)
   const nextAccounts = [
-    { email, name },
+    { email, name, provider },
     ...readStoredAccounts().filter((item) => item.email !== email),
   ].slice(0, 5)
 

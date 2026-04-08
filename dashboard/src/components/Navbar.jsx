@@ -6,7 +6,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Plus, LogOut, FileText } from 'lucide-react'
 import { useGoogleLogin } from '@react-oauth/google'
 import logo from '../assets/logo-manshot.png'
-import { deriveAccountDisplayName, getMe, getStoredAccounts, googleLogin, rememberAccount, saveToken } from '../services/api'
+import { deriveAccountDisplayName, getMe, getStoredAccounts, googleLogin, inferAccountProviderByEmail, rememberAccount, saveToken } from '../services/api'
 
 const links = [
   { path: '/', icon: '⚡', label: 'Dashboard' },
@@ -41,10 +41,12 @@ export default function Navbar() {
         if (!mounted) return
         const email = res?.data?.email
         const displayName = deriveAccountDisplayName(email)
+        const knownAccount = getStoredAccounts().find((account) => account.email === email)
+        const provider = knownAccount?.provider || inferAccountProviderByEmail(email)
         setAccountEmail(email || 'Conta conectada')
         setAccountName(displayName)
         if (email) {
-          setRecentAccounts(rememberAccount({ email, name: displayName }))
+          setRecentAccounts(rememberAccount({ email, name: displayName, provider }))
         }
       })
       .catch(() => {
@@ -114,6 +116,32 @@ export default function Navbar() {
     navigate('/login')
   }
 
+  const handleSelectStoredAccount = (account, isCurrentAccount) => {
+    if (isCurrentAccount) {
+      return
+    }
+
+    closeAddAccountModal()
+
+    const currentAccountProvider = inferAccountProviderByEmail(accountEmail)
+    if (currentAccountProvider === 'local') {
+      addAnotherAccount()
+      return
+    }
+
+    if (account?.provider === 'google') {
+      addAnotherAccount()
+      return
+    }
+
+    navigate('/login', {
+      state: {
+        prefillEmail: account?.email || '',
+        forceLocal: true,
+      },
+    })
+  }
+
   const addAnotherAccount = useGoogleLogin({
     scope: 'openid email profile',
     onSuccess: async (tokenResponse) => {
@@ -125,7 +153,7 @@ export default function Navbar() {
         const displayName = deriveAccountDisplayName(email)
         setAccountEmail(email)
         setAccountName(displayName)
-        setRecentAccounts(rememberAccount({ email, name: displayName }))
+        setRecentAccounts(rememberAccount({ email, name: displayName, provider: 'google' }))
         setIsMenuOpen(false)
         navigate('/', { replace: true })
       } catch {
@@ -470,7 +498,7 @@ export default function Navbar() {
                   borderRadius: '18px',
                   overflow: 'hidden',
                 }}>
-                  {(recentAccounts.length ? recentAccounts : [{ email: accountEmail, name: accountName }]).map((account, index) => {
+                  {(recentAccounts.length ? recentAccounts : [{ email: accountEmail, name: accountName, provider: 'local' }]).map((account, index) => {
                     const isCurrentAccount = account.email === accountEmail || index === 0
                     const avatarText = (account.name || account.email || 'M')
                       .split(' ')
@@ -484,12 +512,7 @@ export default function Navbar() {
                       <button
                         key={account.email}
                         type="button"
-                        onClick={() => {
-                          if (!isCurrentAccount) {
-                            closeAddAccountModal()
-                            addAnotherAccount()
-                          }
-                        }}
+                        onClick={() => handleSelectStoredAccount(account, isCurrentAccount)}
                         style={{
                           width: '100%',
                           padding: '12px 14px',
