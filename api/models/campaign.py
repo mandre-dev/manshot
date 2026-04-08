@@ -21,6 +21,7 @@ class Campaign(Base):
     __tablename__ = "campaigns"
 
     id = Column(Integer, primary_key=True, index=True)
+    owner_email = Column(String, nullable=False, index=True)
     name = Column(String, nullable=False)
     message = Column(String, nullable=False)
     email_subject = Column(String, nullable=True)  # Assunto do email

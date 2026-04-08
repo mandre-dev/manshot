@@ -22,9 +22,14 @@ router = APIRouter(
 
 
 @router.post("/", response_model=CampaignResponse)
-def create_campaign(campaign: CampaignCreate, db: Session = Depends(get_db)):
+def create_campaign(
+    campaign: CampaignCreate,
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user),
+):
     """Cria uma nova campanha."""
-    db_campaign = Campaign(**campaign.model_dump())
+    owner_email = current_user.strip().lower()
+    db_campaign = Campaign(owner_email=owner_email, **campaign.model_dump())
     db.add(db_campaign)
     db.commit()
     db.refresh(db_campaign)
@@ -32,15 +37,28 @@ def create_campaign(campaign: CampaignCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/", response_model=List[CampaignResponse])
-def list_campaigns(db: Session = Depends(get_db)):
+def list_campaigns(
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user),
+):
     """Lista todas as campanhas."""
-    return db.query(Campaign).all()
+    owner_email = current_user.strip().lower()
+    return db.query(Campaign).filter(Campaign.owner_email == owner_email).all()
 
 
 @router.get("/{campaign_id}", response_model=CampaignResponse)
-def get_campaign(campaign_id: int, db: Session = Depends(get_db)):
+def get_campaign(
+    campaign_id: int,
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user),
+):
     """Busca uma campanha pelo ID."""
-    campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
+    owner_email = current_user.strip().lower()
+    campaign = (
+        db.query(Campaign)
+        .filter(Campaign.id == campaign_id, Campaign.owner_email == owner_email)
+        .first()
+    )
     if not campaign:
         raise HTTPException(status_code=404, detail="Campanha não encontrada")
     return campaign
@@ -51,6 +69,7 @@ def send_campaign(
     campaign_id: int,
     payload: CampaignSendRequest | None = None,
     db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user),
 ):
     """
     Enfileira a campanha para disparo assíncrono.
@@ -60,7 +79,12 @@ def send_campaign(
     Se contact_ids for fornecido, usa apenas esses contatos.
     Caso contrário, usa todos os contatos.
     """
-    campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
+    owner_email = current_user.strip().lower()
+    campaign = (
+        db.query(Campaign)
+        .filter(Campaign.id == campaign_id, Campaign.owner_email == owner_email)
+        .first()
+    )
     if not campaign:
         raise HTTPException(status_code=404, detail="Campanha não encontrada")
 
@@ -71,9 +95,16 @@ def send_campaign(
     if payload and payload.ids is not None:
         if len(payload.ids) == 0:
             raise HTTPException(status_code=400, detail="Nenhum contato selecionado")
-        contacts = db.query(Contact).filter(Contact.id.in_(payload.ids)).all()
+        contacts = (
+            db.query(Contact)
+            .filter(
+                Contact.owner_email == owner_email,
+                Contact.id.in_(payload.ids),
+            )
+            .all()
+        )
     else:
-        contacts = db.query(Contact).all()
+        contacts = db.query(Contact).filter(Contact.owner_email == owner_email).all()
 
     if not contacts:
         raise HTTPException(status_code=400, detail="Nenhum contato selecionado")
@@ -110,9 +141,18 @@ def send_campaign(
 
 
 @router.delete("/{campaign_id}")
-def delete_campaign(campaign_id: int, db: Session = Depends(get_db)):
+def delete_campaign(
+    campaign_id: int,
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user),
+):
     """Remove uma campanha."""
-    campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
+    owner_email = current_user.strip().lower()
+    campaign = (
+        db.query(Campaign)
+        .filter(Campaign.id == campaign_id, Campaign.owner_email == owner_email)
+        .first()
+    )
     if not campaign:
         raise HTTPException(status_code=404, detail="Campanha não encontrada")
     db.delete(campaign)
@@ -122,10 +162,18 @@ def delete_campaign(campaign_id: int, db: Session = Depends(get_db)):
 
 @router.put("/{campaign_id}", response_model=CampaignResponse)
 def update_campaign(
-    campaign_id: int, data: CampaignCreate, db: Session = Depends(get_db)
+    campaign_id: int,
+    data: CampaignCreate,
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user),
 ):
     """Atualiza uma campanha."""
-    campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
+    owner_email = current_user.strip().lower()
+    campaign = (
+        db.query(Campaign)
+        .filter(Campaign.id == campaign_id, Campaign.owner_email == owner_email)
+        .first()
+    )
     if not campaign:
         raise HTTPException(status_code=404, detail="Campanha não encontrada")
     for key, value in data.model_dump().items():
