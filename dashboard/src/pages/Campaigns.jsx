@@ -439,6 +439,7 @@ export default function Campaigns() {
   const intervalSeconds = Math.max(0, Number(sendInterval) || 0)
   const selectedCount = selectedContacts.size
   const totalStaggerSeconds = selectedCount > 1 ? (selectedCount - 1) * intervalSeconds : 0
+  const selectedCampaignName = campaigns.find((c) => c.id === campaignToSend)?.name || ''
 
   return (
     <div>
@@ -772,7 +773,7 @@ export default function Campaigns() {
             maxHeight: '70vh', overflowY: 'auto', width: '90%'
           }}>
             <div style={{ color: '#FF6B00', fontSize: '14px', fontWeight: '600', marginBottom: '16px', textTransform: 'uppercase', fontFamily: "'Space Mono', monospace" }}>
-              Selecionar contatos para disparar
+              {`Selecionar contatos para disparar${selectedCampaignName ? ` ➜ ${selectedCampaignName}` : ''}`}
             </div>
 
             <div style={{ marginBottom: '16px', paddingBottom: '12px', borderBottom: '2px solid #2a1a0a' }}>
