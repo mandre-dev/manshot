@@ -3,6 +3,7 @@ import axios from 'axios'
 
 const TOKEN_KEY = 'manshot_token'
 const ACCOUNT_HISTORY_KEY = 'manshot_accounts'
+const AUTH_PROVIDER_KEY = 'manshot_auth_provider'
 
 export function inferAccountProviderByEmail(email) {
   const normalizedEmail = (email || '').trim().toLowerCase()
@@ -97,6 +98,21 @@ export function rememberAccount(account) {
   return nextAccounts
 }
 
+export function removeStoredAccount(email) {
+  if (typeof window === 'undefined') {
+    return []
+  }
+
+  const normalizedEmail = (email || '').trim().toLowerCase()
+  if (!normalizedEmail) {
+    return readStoredAccounts()
+  }
+
+  const nextAccounts = readStoredAccounts().filter((item) => item.email !== normalizedEmail)
+  localStorage.setItem(ACCOUNT_HISTORY_KEY, JSON.stringify(nextAccounts))
+  return nextAccounts
+}
+
 export function clearStoredAccounts() {
   if (typeof window === 'undefined') {
     return
@@ -130,7 +146,15 @@ api.interceptors.response.use(
 
 export const saveToken = (token) => localStorage.setItem(TOKEN_KEY, token)
 export const getToken = () => localStorage.getItem(TOKEN_KEY)
-export const clearToken = () => localStorage.removeItem(TOKEN_KEY)
+export const setAuthProvider = (provider) => {
+  const safeProvider = provider === 'google' ? 'google' : 'local'
+  localStorage.setItem(AUTH_PROVIDER_KEY, safeProvider)
+}
+export const getAuthProvider = () => localStorage.getItem(AUTH_PROVIDER_KEY)
+export const clearToken = () => {
+  localStorage.removeItem(TOKEN_KEY)
+  localStorage.removeItem(AUTH_PROVIDER_KEY)
+}
 
 // ── Auth ────────────────────────────────────────────
 export const login = (email, password) => api.post('/auth/login', { email, password })

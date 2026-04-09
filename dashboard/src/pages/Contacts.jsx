@@ -1,7 +1,7 @@
 // Contacts.jsx — Manshot Orange Theme + Edit/Delete Menu
 
 import { useEffect, useState, useRef } from 'react'
-import { getContacts, createContact, updateContact, deleteContact } from '../services/api'
+import { getAuthProvider, getContacts, createContact, updateContact, deleteContact, getMe } from '../services/api'
 import * as XLSX from 'xlsx'
 import { useGoogleLogin } from '@react-oauth/google'
 import excelLogo from '../assets/excel-logo.svg'
@@ -157,8 +157,11 @@ export default function Contacts() {
   const [isImportPressed, setIsImportPressed] = useState(false)
   const [isImportMenuOpen, setIsImportMenuOpen] = useState(false)
   const [isImportOptionHovered, setIsImportOptionHovered] = useState('')
+  const [canImportFromGoogle, setCanImportFromGoogle] = useState(false)
   const fileInputRef = useRef(null)
   const importMenuRef = useRef(null)
+
+  const googleImportUnavailableMessage = 'Importacao do Google indisponivel para esta conta. Para importar contatos do Google, entre com uma conta Google.'
 
   function getAnimatedInputStyle(field) {
     const isFocused = focusedField === field
@@ -190,6 +193,29 @@ export default function Contacts() {
 
   useEffect(() => {
     load()
+  }, [])
+
+  useEffect(() => {
+    let mounted = true
+
+    async function resolveGoogleImportPermission() {
+      try {
+        const me = await getMe()
+        const authProvider = getAuthProvider()
+        const isAdmin = Boolean(me?.data?.is_admin)
+        if (!mounted) return
+        setCanImportFromGoogle(isAdmin || authProvider === 'google')
+      } catch {
+        if (!mounted) return
+        setCanImportFromGoogle(false)
+      }
+    }
+
+    resolveGoogleImportPermission()
+
+    return () => {
+      mounted = false
+    }
   }, [])
 
   useEffect(() => {
@@ -583,13 +609,19 @@ export default function Contacts() {
 
                 <button
                   type="button"
-                  onClick={() => googleImportLogin()}
+                  onClick={() => {
+                    if (!canImportFromGoogle) {
+                      alert(googleImportUnavailableMessage)
+                      return
+                    }
+                    googleImportLogin()
+                  }}
                   style={{
                     width: '100%',
                     padding: '10px 12px',
-                    background: isImportOptionHovered === 'google' ? '#1a1208' : 'transparent',
+                    background: isImportOptionHovered === 'google' && canImportFromGoogle ? '#1a1208' : 'transparent',
                     border: 'none',
-                    color: '#e5e7eb',
+                    color: canImportFromGoogle ? '#e5e7eb' : '#6b7280',
                     textAlign: 'left',
                     fontSize: '12px',
                     fontFamily: "'Space Mono', monospace",
@@ -599,8 +631,12 @@ export default function Contacts() {
                   onMouseLeave={() => setIsImportOptionHovered('')}
                 >
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                    <img src={googleContactsLogo} alt="Google Contatos" style={{ width: '20px', height: '20px', borderRadius: '3px' }} />
-                    <span>Importar do Google</span>
+                    <img
+                      src={googleContactsLogo}
+                      alt="Google Contatos"
+                      style={{ width: '20px', height: '20px', borderRadius: '3px', opacity: canImportFromGoogle ? 1 : 0.45 }}
+                    />
+                    <span>{canImportFromGoogle ? 'Importar do Google' : 'Importar do Google (indisponivel)'}</span>
                   </span>
                 </button>
               </div>

@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Plus, LogOut, FileText } from 'lucide-react'
+import { Plus, User, LogOut, FileText } from 'lucide-react'
 import { useGoogleLogin } from '@react-oauth/google'
 import logo from '../assets/logo-manshot.png'
 import { clearToken, deriveAccountDisplayName, getMe, getStoredAccounts, googleLogin, inferAccountProviderByEmail, rememberAccount, removeStoredAccount, saveToken, setAuthProvider } from '../services/api'
@@ -363,8 +363,8 @@ export default function Navbar() {
                 e.currentTarget.style.background = 'transparent'
               }}
             >
-              <Plus size={20} strokeWidth={1.8} />
-              <span>Adicionar outra conta</span>
+              <User size={20} strokeWidth={1.8} />
+              <span>Contas logadas</span>
             </button>
             <button
               onClick={handleTermsClick}
