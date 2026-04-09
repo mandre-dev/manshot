@@ -38,6 +38,8 @@ export default function Navbar() {
   const [isRemoveBtnPressed, setIsRemoveBtnPressed] = useState(false)
   const [isRemoveCancelBtnHovered, setIsRemoveCancelBtnHovered] = useState(false)
   const [isRemoveCancelBtnPressed, setIsRemoveCancelBtnPressed] = useState(false)
+  const [isSwitchingAccount, setIsSwitchingAccount] = useState(false)
+  const [switchingAccountName, setSwitchingAccountName] = useState('')
 
   useEffect(() => {
     let mounted = true
@@ -117,6 +119,16 @@ export default function Navbar() {
     setIsAddAccountModalOpen(false)
   }
 
+  const startAccountSwitchTransition = (targetAccountName = '') => {
+    const safeName = (targetAccountName || '').trim()
+    setSwitchingAccountName(safeName)
+    setIsSwitchingAccount(true)
+
+    window.setTimeout(() => {
+      window.location.reload()
+    }, 900)
+  }
+
   const handleEmailAccount = () => {
     setIsAddAccountModalOpen(false)
     navigate('/login')
@@ -140,7 +152,7 @@ export default function Navbar() {
         setAccountName(displayName)
         setRecentAccounts(rememberAccount({ email: activeEmail, name: displayName, provider }))
         setIsMenuOpen(false)
-        navigate('/', { replace: true })
+        startAccountSwitchTransition(displayName)
         return
       } catch {
         // Se a sessão salva expirou, cai no fluxo padrão de autenticação.
@@ -197,7 +209,7 @@ export default function Navbar() {
         setAccountName(displayName)
         setRecentAccounts(rememberAccount({ email, name: displayName, provider: 'google', token: res.data.access_token }))
         setIsMenuOpen(false)
-        navigate('/', { replace: true })
+        startAccountSwitchTransition(displayName)
       } catch {
         // Mantém a conta atual caso o fluxo de troca falhe.
       }
@@ -951,6 +963,64 @@ export default function Navbar() {
                   >
                     Cancelar
                   </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Account Switching Overlay */}
+          {isSwitchingAccount && (
+            <div style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(4,8,16,0.96)',
+              backdropFilter: 'blur(12px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 2147483647,
+              animation: 'fadeInOverlay 0.2s ease',
+            }}>
+              <style>{`
+                @keyframes manshotSpin {
+                  from { transform: rotate(0deg); }
+                  to { transform: rotate(360deg); }
+                }
+              `}</style>
+              <div style={{
+                background: '#131a27',
+                border: '1px solid #2a1a0a',
+                borderRadius: '18px',
+                padding: '26px 28px',
+                width: 'min(92vw, 420px)',
+                textAlign: 'center',
+                boxShadow: '0 20px 60px rgba(0,0,0,0.85)',
+              }}>
+                <div style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '50%',
+                  border: '3px solid #2a1a0a',
+                  borderTopColor: '#FF6B00',
+                  margin: '0 auto 14px',
+                  animation: 'manshotSpin 0.9s linear infinite',
+                }} />
+                <div style={{
+                  color: '#f3f4f6',
+                  fontSize: '18px',
+                  fontWeight: '600',
+                  marginBottom: '8px',
+                }}>
+                  Alternando conta
+                </div>
+                <div style={{
+                  color: '#9ca3af',
+                  fontSize: '13px',
+                  lineHeight: '1.5',
+                }}>
+                  {switchingAccountName
+                    ? `Atualizando dados de ${switchingAccountName}...`
+                    : 'Atualizando dados da nova conta...'}
                 </div>
               </div>
             </div>
