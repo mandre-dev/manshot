@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
 import { useGoogleLogin } from '@react-oauth/google'
-import { checkCredentials, getMe, googleLogin, login, rememberAccount, register, saveToken } from '../services/api'
+import { checkCredentials, getMe, googleLogin, login, rememberAccount, register, saveToken, setAuthProvider } from '../services/api'
 
 function GoogleMark() {
   return (
@@ -170,6 +170,7 @@ export default function Login() {
         ? await register(form.email, form.password)
         : await login(form.email, form.password)
       saveToken(res.data.access_token)
+      setAuthProvider('local')
       rememberAccount({ email: form.email, provider: 'local' })
       navigate('/', { replace: true })
     } catch (err) {
@@ -204,6 +205,7 @@ export default function Login() {
       try {
         const res = await googleLogin(tokenResponse.access_token)
         saveToken(res.data.access_token)
+        setAuthProvider('google')
         const me = await getMe()
         rememberAccount({ email: me?.data?.email || '', provider: 'google' })
         navigate('/', { replace: true })

@@ -249,6 +249,14 @@ export default function Campaigns() {
   const [isPrimaryPressed, setIsPrimaryPressed] = useState(false)
   const [isUploadHovered, setIsUploadHovered] = useState(false)
   const [isUploadPressed, setIsUploadPressed] = useState(false)
+  const [isEditCancelHovered, setIsEditCancelHovered] = useState(false)
+  const [isEditCancelPressed, setIsEditCancelPressed] = useState(false)
+  const [isModalSendHovered, setIsModalSendHovered] = useState(false)
+  const [isModalSendPressed, setIsModalSendPressed] = useState(false)
+  const [isModalCancelHovered, setIsModalCancelHovered] = useState(false)
+  const [isModalCancelPressed, setIsModalCancelPressed] = useState(false)
+  const [isIntervalHovered, setIsIntervalHovered] = useState(false)
+  const [isIntervalFocused, setIsIntervalFocused] = useState(false)
 
   function getAnimatedInputStyle(field) {
     const isFocused = focusedField === field
@@ -616,11 +624,32 @@ export default function Campaigns() {
                 setAttachmentName('')
                 setAttachmentIsImage(false)
               }} style={{
-                background: 'transparent', color: '#9ca3af',
-                border: '2px solid #2a1a0a', borderRadius: '8px',
+                background: isEditCancelHovered ? '#1a1208' : 'transparent',
+                color: isEditCancelHovered ? '#e5e7eb' : '#9ca3af',
+                border: `2px solid ${isEditCancelHovered ? '#FF6B004d' : '#2a1a0a'}`,
+                borderRadius: '8px',
                 padding: '10px 20px', fontSize: '13px', cursor: 'pointer',
-                fontFamily: "'Space Mono', monospace"
-              }}>Cancelar</button>
+                fontFamily: "'Space Mono', monospace",
+                transform: isEditCancelPressed
+                  ? 'translateY(1px) scale(0.99)'
+                  : isEditCancelHovered
+                    ? 'translateY(-1px) scale(1.01)'
+                    : 'translateY(0) scale(1)',
+                boxShadow: isEditCancelPressed
+                  ? 'inset 0 0 0 1px #FF6B0077'
+                  : isEditCancelHovered
+                    ? '0 6px 16px #FF6B001a'
+                    : 'none',
+                transition: 'all 0.12s ease',
+              }}
+                onMouseEnter={() => setIsEditCancelHovered(true)}
+                onMouseDown={() => setIsEditCancelPressed(true)}
+                onMouseUp={() => setIsEditCancelPressed(false)}
+                onMouseLeave={() => {
+                  setIsEditCancelHovered(false)
+                  setIsEditCancelPressed(false)
+                }}
+              >Cancelar</button>
             )}
           </div>
         </form>
@@ -809,7 +838,21 @@ export default function Campaigns() {
                 step="0.5"
                 value={sendInterval}
                 onChange={e => setSendInterval(e.target.value)}
-                style={inputStyle}
+                onMouseEnter={() => setIsIntervalHovered(true)}
+                onMouseLeave={() => setIsIntervalHovered(false)}
+                onFocus={() => setIsIntervalFocused(true)}
+                onBlur={() => setIsIntervalFocused(false)}
+                style={{
+                  ...inputStyle,
+                  border: isIntervalFocused || isIntervalHovered ? '2px solid #FF6B00' : '2px solid #2a1a0a',
+                  boxShadow: isIntervalFocused
+                    ? '0 0 0 3px #FF6B0033, 0 8px 24px #FF6B001f'
+                    : isIntervalHovered
+                      ? '0 0 0 2px #FF6B0022, 0 5px 16px #FF6B0017'
+                      : 'none',
+                  transform: isIntervalFocused || isIntervalHovered ? 'translateY(-1px)' : 'translateY(0)',
+                  transition: 'border-color 0.16s ease, box-shadow 0.16s ease, transform 0.12s ease',
+                }}
               />
             </div>
 
@@ -831,23 +874,65 @@ export default function Campaigns() {
             )}
 
             <div style={{ display: 'flex', gap: '8px', marginTop: '20px' }}>
-              <button onClick={confirmSendWithContacts} style={{
-                background: '#FF6B00', color: '#fff', border: 'none',
-                borderRadius: '8px', padding: '10px 16px', fontSize: '13px',
-                fontWeight: '600', cursor: 'pointer', flex: 1,
-                fontFamily: "'Space Mono', monospace"
-              }}>
+              <button
+                onClick={confirmSendWithContacts}
+                style={{
+                  background: '#FF6B00', color: '#fff', border: 'none',
+                  borderRadius: '8px', padding: '10px 16px', fontSize: '13px',
+                  fontWeight: '600', cursor: 'pointer', flex: 1,
+                  fontFamily: "'Space Mono', monospace",
+                  transform: isModalSendPressed
+                    ? 'translateY(1px) scale(0.99)'
+                    : isModalSendHovered
+                      ? 'translateY(-1px) scale(1.01)'
+                      : 'translateY(0) scale(1)',
+                  boxShadow: isModalSendPressed
+                    ? 'inset 0 0 0 2px #ff9a3d66'
+                    : isModalSendHovered
+                      ? '0 8px 22px #FF6B0042'
+                      : '0 6px 18px #FF6B0033',
+                  transition: 'transform 0.1s ease, box-shadow 0.14s ease',
+                }}
+                onMouseEnter={() => setIsModalSendHovered(true)}
+                onMouseDown={() => setIsModalSendPressed(true)}
+                onMouseUp={() => setIsModalSendPressed(false)}
+                onMouseLeave={() => {
+                  setIsModalSendHovered(false)
+                  setIsModalSendPressed(false)
+                }}
+              >
                 ▶ Disparar ({selectedContacts.size})
               </button>
               <button onClick={() => {
                 setShowSelectContacts(false)
                 setSendInterval(0)
               }} style={{
-                background: 'transparent', color: '#9ca3af',
-                border: '2px solid #2a1a0a', borderRadius: '8px',
+                background: isModalCancelHovered ? '#1a1208' : 'transparent',
+                color: isModalCancelHovered ? '#e5e7eb' : '#9ca3af',
+                border: `2px solid ${isModalCancelHovered ? '#FF6B004d' : '#2a1a0a'}`,
+                borderRadius: '8px',
                 padding: '10px 16px', fontSize: '13px', cursor: 'pointer',
-                fontFamily: "'Space Mono', monospace"
-              }}>
+                fontFamily: "'Space Mono', monospace",
+                transform: isModalCancelPressed
+                  ? 'translateY(1px) scale(0.99)'
+                  : isModalCancelHovered
+                    ? 'translateY(-1px) scale(1.01)'
+                    : 'translateY(0) scale(1)',
+                boxShadow: isModalCancelPressed
+                  ? 'inset 0 0 0 1px #FF6B0077'
+                  : isModalCancelHovered
+                    ? '0 6px 16px #FF6B001a'
+                    : 'none',
+                transition: 'all 0.12s ease',
+              }}
+                onMouseEnter={() => setIsModalCancelHovered(true)}
+                onMouseDown={() => setIsModalCancelPressed(true)}
+                onMouseUp={() => setIsModalCancelPressed(false)}
+                onMouseLeave={() => {
+                  setIsModalCancelHovered(false)
+                  setIsModalCancelPressed(false)
+                }}
+              >
                 Cancelar
               </button>
             </div>

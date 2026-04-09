@@ -11,7 +11,6 @@ from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
 
-
 # revision identifiers, used by Alembic.
 revision: str = "b3f1a2c9d8e0"
 down_revision: Union[str, Sequence[str], None] = "4a47b6a23fb4"
@@ -38,8 +37,12 @@ def upgrade() -> None:
         ).bindparams(owner=DEFAULT_OWNER_EMAIL)
     )
 
-    op.create_index("ix_contacts_owner_email", "contacts", ["owner_email"], unique=False)
-    op.create_index("ix_campaigns_owner_email", "campaigns", ["owner_email"], unique=False)
+    op.create_index(
+        "ix_contacts_owner_email", "contacts", ["owner_email"], unique=False
+    )
+    op.create_index(
+        "ix_campaigns_owner_email", "campaigns", ["owner_email"], unique=False
+    )
 
 
 def downgrade() -> None:
