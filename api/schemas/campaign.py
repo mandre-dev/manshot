@@ -9,6 +9,12 @@ from typing import Optional
 from api.models.campaign import StatusEnum
 
 
+class AttachmentItem(BaseModel):
+    url: str
+    filename: str
+    kind: Optional[str] = None
+
+
 class CampaignCreate(BaseModel):
     """Dados necessários para criar uma campanha."""
 
@@ -18,6 +24,7 @@ class CampaignCreate(BaseModel):
     telegram_signature: Optional[str] = None
     message: str
     image_url: Optional[str] = None
+    attachments: list[AttachmentItem] = Field(default_factory=list)
     use_email: bool = False
     use_sms: bool = False
     use_telegram: bool = False
@@ -33,6 +40,7 @@ class CampaignResponse(BaseModel):
     telegram_signature: Optional[str] = None
     message: str
     image_url: Optional[str] = None
+    attachments: list[AttachmentItem] = Field(default_factory=list)
     use_email: bool
     use_sms: bool
     use_telegram: bool
