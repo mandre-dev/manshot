@@ -87,7 +87,19 @@ function getFileNameFromUrl(url) {
   if (!url) return 'arquivo'
   const clean = url.split('?')[0]
   const parts = clean.split('/')
-  return parts[parts.length - 1] || 'arquivo'
+  const rawName = decodeURIComponent(parts[parts.length - 1] || 'arquivo')
+
+  // Remove technical prefixes used in storage names, keeping only the original filename.
+  // Examples:
+  // - 6612023b_MeuArquivo.pdf -> MeuArquivo.pdf
+  // - aacf721416144db3a330cc7a413bd660.docx (legacy) -> arquivo.docx
+  const withoutShortPrefix = rawName.replace(/^[0-9a-f]{8}_/i, '')
+  const legacyHashOnlyMatch = withoutShortPrefix.match(/^([0-9a-f]{32})(\.[^.]+)$/i)
+  if (legacyHashOnlyMatch) {
+    return `arquivo${legacyHashOnlyMatch[2]}`
+  }
+
+  return withoutShortPrefix || 'arquivo'
 }
 
 function DropdownMenu({ campaign, onEdit, onDelete }) {
