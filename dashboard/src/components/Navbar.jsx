@@ -693,21 +693,28 @@ export default function Navbar() {
                     background: 'transparent',
                     color: '#d1d5db',
                     border: 'none',
-                    padding: '2px 10px 8px 44px',
-                    fontSize: '13px',
+                    borderRadius: '12px',
+                    padding: '12px 10px',
+                    fontSize: '15px',
                     fontWeight: '400',
                     cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '14px',
                     textAlign: 'left',
-                    transition: 'color 0.16s ease',
+                    transition: 'all 0.16s ease',
                   }}
                   onMouseEnter={e => {
+                    e.currentTarget.style.background = '#1a2233'
                     e.currentTarget.style.color = '#FFB37D'
                   }}
                   onMouseLeave={e => {
+                    e.currentTarget.style.background = 'transparent'
                     e.currentTarget.style.color = '#d1d5db'
                   }}
                 >
-                  Adicionar com e-mail
+                  <Plus size={20} strokeWidth={1.8} />
+                  <span>Adicionar com e-mail</span>
                 </button>
               </div>
             </div>
