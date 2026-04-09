@@ -1,9 +1,13 @@
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from api.database import engine, Base
 from api.routes import contacts_router, campaigns_router, auth_router
 from api.upload import router as upload_router
+
+UPLOADS_DIR = Path(__file__).resolve().parents[1] / "uploads"
 
 # Cria as tabelas no banco de dados automaticamente
 Base.metadata.create_all(bind=engine)
@@ -28,7 +32,7 @@ app.include_router(contacts_router)
 app.include_router(campaigns_router)
 app.include_router(upload_router)
 app.include_router(auth_router)
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
 
 
 @app.get("/")
