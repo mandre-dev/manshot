@@ -1,8 +1,8 @@
 // Campaigns.jsx — Manshot Orange Theme + Image Upload + Menu
 
 import { useEffect, useState, useRef } from 'react'
-import { getCampaigns, createCampaign, updateCampaign, deleteCampaign, sendCampaign, uploadAttachment, getContacts } from '../services/api'
-import { Mail, MessageSquare, Send, CheckCircle } from 'lucide-react'
+import { getCampaigns, createCampaign, updateCampaign, deleteCampaign, resetCampaignStatus, sendCampaign, uploadAttachment, getContacts } from '../services/api'
+import { Mail, MessageSquare, Send, CheckCircle, X, Paperclip } from 'lucide-react'
 import RichEditor from '../components/RichEditor'
 
 
@@ -102,7 +102,45 @@ function getFileNameFromUrl(url) {
   return withoutShortPrefix || 'arquivo'
 }
 
-function DropdownMenu({ campaign, onEdit, onDelete }) {
+function getAttachmentKind(attachment) {
+  if (!attachment) return 'file'
+  if (attachment.kind === 'image' || attachment.kind === 'file') return attachment.kind
+  return isImageUrl(attachment.url) ? 'image' : 'file'
+}
+
+function normalizeCampaignAttachments(campaign) {
+  const attachments = Array.isArray(campaign?.attachments) ? campaign.attachments : []
+  if (attachments.length > 0) {
+    return attachments
+      .filter((attachment) => attachment?.url)
+      .map((attachment) => ({
+        url: attachment.url,
+        filename: attachment.filename || getFileNameFromUrl(attachment.url),
+        kind: getAttachmentKind(attachment),
+      }))
+  }
+
+  if (campaign?.image_url) {
+    return [{
+      url: campaign.image_url,
+      filename: getFileNameFromUrl(campaign.image_url),
+      kind: isImageUrl(campaign.image_url) ? 'image' : 'file',
+    }]
+  }
+
+  return []
+}
+
+function normalizeUploadedAttachment(uploadData, file) {
+  const isImage = uploadData.kind === 'image' || (file.type || '').startsWith('image/')
+  return {
+    url: uploadData.url,
+    filename: uploadData.filename || file.name,
+    kind: uploadData.kind || (isImage ? 'image' : 'file'),
+  }
+}
+
+function DropdownMenu({ campaign, onEdit, onDelete, onReset }) {
   const [open, setOpen] = useState(false)
   const [isMenuHovered, setIsMenuHovered] = useState(false)
   const [isMenuPressed, setIsMenuPressed] = useState(false)
@@ -160,6 +198,17 @@ function DropdownMenu({ campaign, onEdit, onDelete }) {
           borderRadius: '8px', overflow: 'hidden', zIndex: 100,
           minWidth: '130px', boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
         }}>
+          {campaign.status === 'running' && (
+            <button onClick={() => { onReset(campaign.id); setOpen(false) }} style={{
+              display: 'block', width: '100%', padding: '10px 16px',
+              background: 'transparent', border: 'none', color: '#f59e0b',
+              fontSize: '12px', cursor: 'pointer', textAlign: 'left',
+              fontFamily: "'Space Mono', monospace",
+            }}
+              onMouseEnter={e => e.currentTarget.style.background = '#3b2a08'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            >↻ Destravar</button>
+          )}
           <button onClick={() => { onEdit(campaign); setOpen(false) }} style={{
             display: 'block', width: '100%', padding: '10px 16px',
             background: 'transparent', border: 'none', color: '#e5e7eb',
@@ -241,13 +290,12 @@ export default function Campaigns() {
   const [sending, setSending] = useState(null)
   const [sendingModalStatus, setSendingModalStatus] = useState(null) // null | 'loading' | 'success'
   const [uploading, setUploading] = useState(false)
-  const [imagePreview, setImagePreview] = useState(null)
-  const [attachmentName, setAttachmentName] = useState('')
-  const [attachmentIsImage, setAttachmentIsImage] = useState(false)
+  const [attachments, setAttachments] = useState([])
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState({
     name: '', message: '', image_url: null, email_subject: '', sms_from: '', telegram_signature: '',
     use_email: false, use_sms: false, use_telegram: false,
+    attachments: [],
   })
   const [contacts, setContacts] = useState([])
   const [loadingContacts, setLoadingContacts] = useState(false)
@@ -286,6 +334,21 @@ export default function Campaigns() {
       transform: isActive ? 'translateY(-1px)' : 'translateY(0)',
       transition: 'border-color 0.16s ease, box-shadow 0.16s ease, transform 0.12s ease',
     }
+  }
+
+  function syncAttachments(nextAttachments) {
+    const safeAttachments = nextAttachments.filter(Boolean)
+    setAttachments(safeAttachments)
+    setForm((current) => ({
+      ...current,
+      attachments: safeAttachments,
+      image_url: safeAttachments[0]?.url || null,
+    }))
+  }
+
+  function removeAttachment(index) {
+    const nextAttachments = attachments.filter((_, currentIndex) => currentIndex !== index)
+    syncAttachments(nextAttachments)
   }
 
   async function load() {
@@ -334,19 +397,30 @@ export default function Campaigns() {
   }, [campaigns])
 
   async function handleAttachmentUpload(e) {
-    const file = e.target.files[0]
-    if (!file) return
+    const files = Array.from(e.target.files || [])
+    if (files.length === 0) return
+
     setUploading(true)
     try {
-      const res = await uploadAttachment(file)
-      const isImage = (file.type || '').startsWith('image/') || res.data.kind === 'image'
-      setForm({ ...form, image_url: res.data.url })
-      setAttachmentName(res.data.filename || file.name)
-      setAttachmentIsImage(isImage)
-      setImagePreview(isImage ? URL.createObjectURL(file) : null)
+      const uploadedAttachments = []
+
+      for (const file of files) {
+        try {
+          const res = await uploadAttachment(file)
+          uploadedAttachments.push(normalizeUploadedAttachment(res.data, file))
+        } catch (err) {
+          console.error(err)
+          alert(`Erro ao fazer upload do arquivo: ${file.name}`)
+        }
+      }
+
+      if (uploadedAttachments.length > 0) {
+        syncAttachments([...attachments, ...uploadedAttachments])
+      }
     } catch (err) {
       alert('Erro ao fazer upload do arquivo')
     } finally {
+      e.target.value = ''
       setUploading(false)
     }
   }
@@ -360,10 +434,8 @@ export default function Campaigns() {
       } else {
         await createCampaign(form)
       }
-      setForm({ name: '', message: '', image_url: null, email_subject: '', sms_from: '', telegram_signature: '', use_email: false, use_sms: false, use_telegram: false })
-      setImagePreview(null)
-      setAttachmentName('')
-      setAttachmentIsImage(false)
+      setForm({ name: '', message: '', image_url: null, email_subject: '', sms_from: '', telegram_signature: '', use_email: false, use_sms: false, use_telegram: false, attachments: [] })
+      setAttachments([])
       load()
     } catch (err) {
       console.error(err)
@@ -372,6 +444,7 @@ export default function Campaigns() {
 
   function handleEdit(campaign) {
     setEditingId(campaign.id)
+    const normalizedAttachments = normalizeCampaignAttachments(campaign)
     setForm({
       name: campaign.name,
       message: campaign.message,
@@ -382,17 +455,21 @@ export default function Campaigns() {
       use_email: campaign.use_email,
       use_sms: campaign.use_sms,
       use_telegram: campaign.use_telegram,
+      attachments: normalizedAttachments,
     })
-    const previewAsImage = isImageUrl(campaign.image_url)
-    setAttachmentIsImage(previewAsImage)
-    setAttachmentName(getFileNameFromUrl(campaign.image_url))
-    setImagePreview(previewAsImage ? campaign.image_url : null)
+    setAttachments(normalizedAttachments)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   async function handleDelete(id) {
     if (!confirm('Excluir campanha?')) return
     await deleteCampaign(id)
+    load()
+  }
+
+  async function handleResetCampaign(id) {
+    if (!confirm('Destravar esta campanha e voltar para pendente?')) return
+    await resetCampaignStatus(id)
     load()
   }
 
@@ -524,71 +601,93 @@ export default function Campaigns() {
             )}
 
             {/* Upload */}
-            <div style={{ border: '1px dashed #2a1a0a', borderRadius: '8px', padding: '16px', textAlign: 'center' }}>
-              {form.image_url ? (
-                <div>
-                  {attachmentIsImage ? (
-                    <img src={imagePreview || form.image_url} alt="Preview" style={{ maxHeight: '120px', borderRadius: '6px', marginBottom: '8px' }} />
-                  ) : (
-                    <div style={{ color: '#e5e7eb', marginBottom: '8px', fontSize: '12px', fontFamily: "'Space Mono', monospace" }}>
-                      📄 {attachmentName || 'Arquivo anexado'}
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                    <span style={{ color: '#10b981', fontSize: '11px', fontFamily: "'Space Mono', monospace" }}>✓ Arquivo carregado</span>
-                    <button type="button" onClick={() => {
-                      setImagePreview(null)
-                      setAttachmentName('')
-                      setAttachmentIsImage(false)
-                      setForm({ ...form, image_url: null })
-                    }}
-                      style={{ background: 'transparent', border: 'none', color: '#f87171', fontSize: '11px', cursor: 'pointer', fontFamily: "'Space Mono', monospace" }}>
-                      remover
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <div style={{ color: '#6b7280', fontSize: '12px', marginBottom: '8px', fontFamily: "'Space Mono', monospace" }}>
-                    {uploading ? '⏳ Enviando...' : '📎 Adicionar anexo (opcional)'}
-                  </div>
-                  <input type="file" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip,.rar" onChange={handleAttachmentUpload}
-                    style={{ display: 'none' }} id="attachment-upload" disabled={uploading} />
-                  <label htmlFor="attachment-upload" style={{
-                    background: isUploadHovered ? '#FF6B0033' : '#FF6B0022',
-                    color: '#FF6B00',
-                    border: `1px solid ${isUploadHovered ? '#FF6B00' : '#FF6B0044'}`,
-                    borderRadius: '6px',
-                    padding: '6px 16px',
-                    fontSize: '12px',
-                    cursor: uploading ? 'not-allowed' : 'pointer',
-                    fontFamily: "'Space Mono', monospace",
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transform: isUploadPressed
-                      ? 'translateY(1px) scale(0.98)'
-                      : isUploadHovered
-                        ? 'translateY(-1px) scale(1.02)'
-                        : 'translateY(0) scale(1)',
-                    boxShadow: isUploadPressed
-                      ? 'inset 0 0 0 1px rgba(255,107,0,0.5)'
-                      : isUploadHovered
-                        ? '0 6px 18px rgba(255,107,0,0.16)'
-                        : 'none',
-                    transition: 'background 0.14s ease, border-color 0.14s ease, transform 0.12s ease, box-shadow 0.14s ease',
-                    opacity: uploading ? 0.7 : 1,
-                  }}
-                    onMouseEnter={() => !uploading && setIsUploadHovered(true)}
-                    onMouseLeave={() => {
-                      setIsUploadHovered(false)
-                      setIsUploadPressed(false)
-                    }}
-                    onMouseDown={() => !uploading && setIsUploadPressed(true)}
-                    onMouseUp={() => setIsUploadPressed(false)}
-                  >Escolher arquivo</label>
+            <div style={{ border: '1px dashed #2a1a0a', borderRadius: '8px', padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: '#6b7280', fontSize: '12px', marginBottom: '10px', fontFamily: "'Space Mono', monospace", width: '100%' }}>
+                <Paperclip size={14} />
+                <span>{uploading ? 'Enviando anexos...' : 'Adicionar anexo(s) opcional(is)'}</span>
+              </div>
+
+              {attachments.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px', width: '100%' }}>
+                  {attachments.map((attachment, index) => {
+                    const kind = getAttachmentKind(attachment)
+                    return (
+                      <div key={`${attachment.url}-${index}`} style={{
+                        display: 'flex', alignItems: 'center', gap: '10px',
+                        padding: '10px 12px', background: '#1a1208',
+                        border: '1px solid #2a1a0a', borderRadius: '8px'
+                      }}>
+                        {kind === 'image' ? (
+                          <img src={attachment.url} alt={attachment.filename} style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover', flexShrink: 0 }} />
+                        ) : (
+                          <div style={{ width: '40px', height: '40px', borderRadius: '6px', background: '#2a1a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FF6B00', flexShrink: 0, fontSize: '18px' }}>
+                            📄
+                          </div>
+                        )}
+
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ color: '#e5e7eb', fontSize: '12px', fontFamily: "'Space Mono', monospace", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {attachment.filename}
+                          </div>
+                          <div style={{ color: '#6b7280', fontSize: '10px', fontFamily: "'Space Mono', monospace" }}>
+                            {kind === 'image' ? 'Imagem' : 'Arquivo'}
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => removeAttachment(index)}
+                          style={{
+                            background: 'transparent', border: 'none', color: '#f87171',
+                            cursor: 'pointer', fontSize: '12px', fontFamily: "'Space Mono', monospace"
+                          }}
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    )
+                  })}
                 </div>
               )}
+
+              <input type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip,.rar" onChange={handleAttachmentUpload}
+                style={{ display: 'none' }} id="attachment-upload" disabled={uploading} />
+              <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+                <label htmlFor="attachment-upload" style={{
+                  background: isUploadHovered ? '#FF6B0033' : '#FF6B0022',
+                  color: '#FF6B00',
+                  border: `1px solid ${isUploadHovered ? '#FF6B00' : '#FF6B0044'}`,
+                  borderRadius: '6px',
+                  padding: '6px 16px',
+                  fontSize: '12px',
+                  cursor: uploading ? 'not-allowed' : 'pointer',
+                  fontFamily: "'Space Mono', monospace",
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transform: isUploadPressed
+                    ? 'translateY(1px) scale(0.98)'
+                    : isUploadHovered
+                      ? 'translateY(-1px) scale(1.02)'
+                      : 'translateY(0) scale(1)',
+                  boxShadow: isUploadPressed
+                    ? 'inset 0 0 0 1px rgba(255,107,0,0.5)'
+                    : isUploadHovered
+                      ? '0 6px 18px rgba(255,107,0,0.16)'
+                      : 'none',
+                  transition: 'background 0.14s ease, border-color 0.14s ease, transform 0.12s ease, box-shadow 0.14s ease',
+                  opacity: uploading ? 0.7 : 1,
+                  marginTop: attachments.length > 0 ? '4px' : 0,
+                }}
+                  onMouseEnter={() => !uploading && setIsUploadHovered(true)}
+                  onMouseLeave={() => {
+                    setIsUploadHovered(false)
+                    setIsUploadPressed(false)
+                  }}
+                  onMouseDown={() => !uploading && setIsUploadPressed(true)}
+                  onMouseUp={() => setIsUploadPressed(false)}
+                >Escolher arquivos</label>
+              </div>
             </div>
           </div>
 
@@ -632,10 +731,8 @@ export default function Campaigns() {
             {editingId && (
               <button type="button" onClick={() => {
                 setEditingId(null)
-                setForm({ name: '', message: '', image_url: null, email_subject: '', sms_from: '', telegram_signature: '', use_email: false, use_sms: false, use_telegram: false })
-                setImagePreview(null)
-                setAttachmentName('')
-                setAttachmentIsImage(false)
+                setForm({ name: '', message: '', image_url: null, email_subject: '', sms_from: '', telegram_signature: '', use_email: false, use_sms: false, use_telegram: false, attachments: [] })
+                setAttachments([])
               }} style={{
                 background: isEditCancelHovered ? '#1a1208' : 'transparent',
                 color: isEditCancelHovered ? '#e5e7eb' : '#9ca3af',
@@ -675,9 +772,16 @@ export default function Campaigns() {
           <span style={{ color: '#6b7280', fontSize: '12px', marginLeft: '8px', fontFamily: "'Space Mono', monospace" }}>({campaigns.length} total)</span>
         </div>
 
-        <div style={{ display: 'flex', padding: '10px 16px', borderBottom: '2px solid #2a1a0a' }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(180px, 2fr) minmax(220px, 1.6fr) minmax(120px, 1fr) minmax(100px, 0.8fr) minmax(80px, 0.6fr) minmax(80px, 0.6fr) minmax(120px, 0.9fr) minmax(56px, 0.3fr)',
+          padding: '10px 16px',
+          borderBottom: '2px solid #2a1a0a',
+          gap: '12px',
+          alignItems: 'center',
+        }}>
           {['Campanha', 'Anexo', 'Canais', 'Status', 'Total', 'Sucesso', 'Disparar', ''].map(h => (
-            <div key={h} style={{ flex: 1, color: '#4b5563', fontSize: '11px', fontWeight: '500', textTransform: 'uppercase', fontFamily: "'Space Mono', monospace" }}>{h}</div>
+            <div key={h} style={{ color: '#4b5563', fontSize: '11px', fontWeight: '500', textTransform: 'uppercase', fontFamily: "'Space Mono', monospace", minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{h}</div>
           ))}
         </div>
 
@@ -685,44 +789,50 @@ export default function Campaigns() {
           <div style={{ padding: '24px', textAlign: 'center', color: '#FF6B00', fontFamily: "'Space Mono', monospace" }}>Carregando...</div>
         ) : campaigns.map(c => (
           <div key={c.id} style={{
-            display: 'flex', alignItems: 'center',
+            display: 'grid',
+            gridTemplateColumns: 'minmax(180px, 2fr) minmax(220px, 1.6fr) minmax(120px, 1fr) minmax(100px, 0.8fr) minmax(80px, 0.6fr) minmax(80px, 0.6fr) minmax(120px, 0.9fr) minmax(56px, 0.3fr)',
+            alignItems: 'center',
             padding: '12px 16px', borderBottom: '2px solid #2a1a0a',
+            gap: '12px',
             transition: 'background 0.15s',
           }}
             onMouseEnter={e => e.currentTarget.style.background = '#1a1208'}
             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
           >
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ minWidth: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{ width: '3px', height: '20px', borderRadius: '2px', background: '#FF6B00' }} />
-              <span style={{ color: '#e5e7eb', fontSize: '13px', fontFamily: "'Space Mono', monospace" }}>{c.name}</span>
+              <span style={{ color: '#e5e7eb', fontSize: '13px', fontFamily: "'Space Mono', monospace", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
             </div>
-            <div style={{ flex: 1 }}>
-              {c.image_url ? (
-                isImageUrl(c.image_url) ? (
-                  <img src={c.image_url} alt="img" style={{ width: '32px', height: '32px', borderRadius: '4px', objectFit: 'cover' }} />
-                ) : (
-                  <a
-                    href={c.image_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{ color: '#FF6B00', fontSize: '11px', fontFamily: "'Space Mono', monospace" }}
-                  >
-                    📄 arquivo
-                  </a>
-                )
-              ) : (
-                <span style={{ color: '#4b5563', fontSize: '11px', fontFamily: "'Space Mono', monospace" }}>—</span>
-              )}
-            </div>
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {(() => {
+              const campaignAttachments = normalizeCampaignAttachments(c)
+              return (
+                <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                  {campaignAttachments.length ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <span style={{ color: '#e5e7eb', fontSize: '11px', fontFamily: "'Space Mono', monospace", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        📎 {campaignAttachments[0].filename}
+                      </span>
+                      {campaignAttachments.length > 1 && (
+                        <span style={{ color: '#6b7280', fontSize: '10px', fontFamily: "'Space Mono', monospace" }}>
+                          +{campaignAttachments.length - 1} anexos
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <span style={{ color: '#4b5563', fontSize: '11px', fontFamily: "'Space Mono', monospace" }}>—</span>
+                  )}
+                </div>
+              )
+            })()}
+            <div style={{ minWidth: 0, display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
               {c.use_email && <Mail size={16} color="#FF6B00" />}
               {c.use_sms && <MessageSquare size={16} color="#FF6B00" />}
               {c.use_telegram && <Send size={16} color="#FF6B00" />}
             </div>
-            <div style={{ flex: 1 }}><StatusPill status={c.status} /></div>
-            <div style={{ flex: 1, color: '#9ca3af', fontSize: '13px', fontFamily: "'Space Mono', monospace" }}>{c.total}</div>
-            <div style={{ flex: 1, color: '#10b981', fontSize: '13px', fontFamily: "'Space Mono', monospace" }}>{c.success}</div>
-            <div style={{ flex: 1 }}>
+            <div style={{ minWidth: 0, overflow: 'hidden' }}><StatusPill status={c.status} /></div>
+            <div style={{ minWidth: 0, color: '#9ca3af', fontSize: '13px', fontFamily: "'Space Mono', monospace", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.total}</div>
+            <div style={{ minWidth: 0, color: '#10b981', fontSize: '13px', fontFamily: "'Space Mono', monospace", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.success}</div>
+            <div style={{ minWidth: 0, overflow: 'hidden' }}>
               <button
                 onClick={() => handleSend(c.id)}
                 disabled={sending === c.id || c.status === 'running'}
@@ -765,8 +875,8 @@ export default function Campaigns() {
                 {sending === c.id ? '...' : '▶ Disparar'}
               </button>
             </div>
-            <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
-              <DropdownMenu campaign={c} onEdit={handleEdit} onDelete={handleDelete} />
+            <div style={{ minWidth: 0, display: 'flex', justifyContent: 'flex-end' }}>
+              <DropdownMenu campaign={c} onEdit={handleEdit} onDelete={handleDelete} onReset={handleResetCampaign} />
             </div>
           </div>
         ))}

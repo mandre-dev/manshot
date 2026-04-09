@@ -3,14 +3,35 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import inspect, text
 from api.database import engine, Base
 from api.routes import contacts_router, campaigns_router, auth_router
 from api.upload import router as upload_router
 
 UPLOADS_DIR = Path(__file__).resolve().parents[1] / "uploads"
 
+
+def ensure_campaign_attachments_column() -> None:
+    inspector = inspect(engine)
+    if "campaigns" not in inspector.get_table_names():
+        return
+
+    existing_columns = {column["name"] for column in inspector.get_columns("campaigns")}
+    required_columns = {
+        "attachments_json": "TEXT",
+        "task_id": "VARCHAR",
+    }
+
+    with engine.begin() as connection:
+        for column_name, column_type in required_columns.items():
+            if column_name not in existing_columns:
+                connection.execute(
+                    text(f"ALTER TABLE campaigns ADD COLUMN {column_name} {column_type}")
+                )
+
 # Cria as tabelas no banco de dados automaticamente
 Base.metadata.create_all(bind=engine)
+ensure_campaign_attachments_column()
 
 app = FastAPI(
     title="Manshot API",
