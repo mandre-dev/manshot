@@ -6,7 +6,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Plus, LogOut, FileText } from 'lucide-react'
 import { useGoogleLogin } from '@react-oauth/google'
 import logo from '../assets/logo-manshot.png'
-import { deriveAccountDisplayName, getMe, getStoredAccounts, googleLogin, inferAccountProviderByEmail, rememberAccount, saveToken } from '../services/api'
+import { clearToken, deriveAccountDisplayName, getMe, getStoredAccounts, googleLogin, inferAccountProviderByEmail, rememberAccount, removeStoredAccount, saveToken, setAuthProvider } from '../services/api'
 
 const links = [
   { path: '/', icon: '⚡', label: 'Dashboard' },
@@ -32,6 +32,12 @@ export default function Navbar() {
   const [isAddAccountHovered, setIsAddAccountHovered] = useState(false)
   const [isAddAccountPressed, setIsAddAccountPressed] = useState(false)
   const [isAddAccountModalOpen, setIsAddAccountModalOpen] = useState(false)
+  const [isConfirmRemoveOpen, setIsConfirmRemoveOpen] = useState(false)
+  const [emailToRemove, setEmailToRemove] = useState('')
+  const [isRemoveBtnHovered, setIsRemoveBtnHovered] = useState(false)
+  const [isRemoveBtnPressed, setIsRemoveBtnPressed] = useState(false)
+  const [isRemoveCancelBtnHovered, setIsRemoveCancelBtnHovered] = useState(false)
+  const [isRemoveCancelBtnPressed, setIsRemoveCancelBtnPressed] = useState(false)
 
   useEffect(() => {
     let mounted = true
@@ -89,7 +95,7 @@ export default function Navbar() {
   }
 
   const confirmLogout = () => {
-    localStorage.removeItem('token')
+    clearToken()
     setIsConfirmLogoutOpen(false)
     navigate('/login')
   }
@@ -142,12 +148,30 @@ export default function Navbar() {
     })
   }
 
+  const handleRemoveStoredAccount = (email) => {
+    setEmailToRemove(email)
+    setIsConfirmRemoveOpen(true)
+  }
+
+  const confirmRemoveAccount = () => {
+    const nextAccounts = removeStoredAccount(emailToRemove)
+    setRecentAccounts(nextAccounts)
+    setIsConfirmRemoveOpen(false)
+    setEmailToRemove('')
+  }
+
+  const cancelRemoveAccount = () => {
+    setIsConfirmRemoveOpen(false)
+    setEmailToRemove('')
+  }
+
   const addAnotherAccount = useGoogleLogin({
     scope: 'openid email profile',
     onSuccess: async (tokenResponse) => {
       try {
         const res = await googleLogin(tokenResponse.access_token)
         saveToken(res.data.access_token)
+        setAuthProvider('google')
         const me = await getMe()
         const email = me?.data?.email || 'Conta conectada'
         const displayName = deriveAccountDisplayName(email)
@@ -509,9 +533,8 @@ export default function Navbar() {
                       .toUpperCase()
 
                     return (
-                      <button
+                      <div
                         key={account.email}
-                        type="button"
                         onClick={() => handleSelectStoredAccount(account, isCurrentAccount)}
                         style={{
                           width: '100%',
@@ -519,7 +542,6 @@ export default function Navbar() {
                           display: 'flex',
                           alignItems: 'center',
                           gap: '12px',
-                          border: 'none',
                           background: isCurrentAccount ? '#1a2233' : 'transparent',
                           color: '#fff',
                           cursor: isCurrentAccount ? 'default' : 'pointer',
@@ -586,8 +608,40 @@ export default function Navbar() {
                           }}>
                             ✓
                           </span>
-                        ) : null}
-                      </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              handleRemoveStoredAccount(account.email)
+                            }}
+                            aria-label={`Remover ${account.name || account.email}`}
+                            style={{
+                              border: 'none',
+                              background: 'transparent',
+                              color: '#9ca3af',
+                              cursor: 'pointer',
+                              fontSize: '18px',
+                              lineHeight: 1,
+                              padding: '4px 6px',
+                              borderRadius: '6px',
+                              transition: 'all 0.16s ease',
+                            }}
+                            onMouseEnter={e => {
+                              e.currentTarget.style.color = '#FF6B00'
+                              e.currentTarget.style.background = '#FF6B0012'
+                              e.currentTarget.style.transform = 'scale(1.06)'
+                            }}
+                            onMouseLeave={e => {
+                              e.currentTarget.style.color = '#9ca3af'
+                              e.currentTarget.style.background = 'transparent'
+                              e.currentTarget.style.transform = 'scale(1)'
+                            }}
+                          >
+                            ×
+                          </button>
+                        )}
+                      </div>
                     )
                   })}
                 </div>
@@ -628,7 +682,7 @@ export default function Navbar() {
                   }}
                 >
                   <Plus size={20} strokeWidth={1.8} />
-                  <span>Adicionar outra conta</span>
+                  <span>Adicionar conta Google</span>
                 </button>
 
                 <button
@@ -768,6 +822,107 @@ export default function Navbar() {
                     }}
                     onMouseDown={() => setIsCancelBtnPressed(true)}
                     onMouseUp={() => setIsCancelBtnPressed(false)}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Remove Account Confirmation Modal */}
+          {isConfirmRemoveOpen && (
+            <div style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(4,8,16,0.96)',
+              backdropFilter: 'blur(12px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 2147483647,
+              animation: 'fadeInOverlay 0.2s ease',
+            }}>
+              <div style={{
+                background: '#131a27',
+                border: '1px solid #2a1a0a',
+                borderRadius: '16px',
+                padding: '32px',
+                maxWidth: '420px',
+                width: '90%',
+                textAlign: 'center',
+                boxShadow: '0 20px 60px rgba(0,0,0,0.85)',
+                animation: 'slideInModal 0.2s ease',
+              }}>
+                <h2 style={{
+                  color: '#e5e7eb',
+                  fontSize: '20px',
+                  fontWeight: '600',
+                  marginBottom: '12px',
+                  lineHeight: '1.4',
+                }}>
+                  Remover conta?
+                </h2>
+                <p style={{
+                  color: '#9ca3af',
+                  fontSize: '14px',
+                  marginBottom: '28px',
+                  lineHeight: '1.5',
+                }}>
+                  Tem certeza que deseja remover {emailToRemove}?
+                </p>
+                <div style={{
+                  display: 'flex',
+                  gap: '12px',
+                  flexDirection: 'column',
+                }}>
+                  <button
+                    onClick={confirmRemoveAccount}
+                    style={{
+                      padding: '12px 16px',
+                      background: '#FF6B00',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '24px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      transition: 'all 0.18s ease',
+                      transform: isRemoveBtnPressed ? 'translateY(1px) scale(0.98)' : isRemoveBtnHovered ? 'translateY(-1px) scale(1.02)' : 'translateY(0) scale(1)',
+                      boxShadow: isRemoveBtnHovered ? '0 8px 24px rgba(255,107,0,0.3)' : 'none',
+                    }}
+                    onMouseEnter={() => setIsRemoveBtnHovered(true)}
+                    onMouseLeave={() => {
+                      setIsRemoveBtnHovered(false)
+                      setIsRemoveBtnPressed(false)
+                    }}
+                    onMouseDown={() => setIsRemoveBtnPressed(true)}
+                    onMouseUp={() => setIsRemoveBtnPressed(false)}
+                  >
+                    Remover
+                  </button>
+                  <button
+                    onClick={cancelRemoveAccount}
+                    style={{
+                      padding: '12px 16px',
+                      background: isRemoveCancelBtnHovered ? '#1a1208' : 'transparent',
+                      color: isRemoveCancelBtnPressed ? '#FF6B00' : isRemoveCancelBtnHovered ? '#e5e7eb' : '#9ca3af',
+                      border: '1px solid #2a1a0a',
+                      borderRadius: '24px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      transition: 'all 0.18s ease',
+                      transform: isRemoveCancelBtnPressed ? 'translateY(1px) scale(0.98)' : isRemoveCancelBtnHovered ? 'translateY(-1px) scale(1.02)' : 'translateY(0) scale(1)',
+                      boxShadow: isRemoveCancelBtnHovered ? '0 8px 24px rgba(255,107,0,0.15)' : 'none',
+                    }}
+                    onMouseEnter={() => setIsRemoveCancelBtnHovered(true)}
+                    onMouseLeave={() => {
+                      setIsRemoveCancelBtnHovered(false)
+                      setIsRemoveCancelBtnPressed(false)
+                    }}
+                    onMouseDown={() => setIsRemoveCancelBtnPressed(true)}
+                    onMouseUp={() => setIsRemoveCancelBtnPressed(false)}
                   >
                     Cancelar
                   </button>
