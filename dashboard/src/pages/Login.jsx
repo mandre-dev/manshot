@@ -171,7 +171,7 @@ export default function Login() {
         : await login(form.email, form.password)
       saveToken(res.data.access_token)
       setAuthProvider('local')
-      rememberAccount({ email: form.email, provider: 'local' })
+      rememberAccount({ email: form.email, provider: 'local', token: res.data.access_token })
       navigate('/', { replace: true })
     } catch (err) {
       const apiMessage = err?.response?.data?.detail
@@ -207,7 +207,7 @@ export default function Login() {
         saveToken(res.data.access_token)
         setAuthProvider('google')
         const me = await getMe()
-        rememberAccount({ email: me?.data?.email || '', provider: 'google' })
+        rememberAccount({ email: me?.data?.email || '', provider: 'google', token: res.data.access_token })
         navigate('/', { replace: true })
       } catch (err) {
         const apiMessage = err?.response?.data?.detail

@@ -4,6 +4,7 @@ import axios from 'axios'
 const TOKEN_KEY = 'manshot_token'
 const ACCOUNT_HISTORY_KEY = 'manshot_accounts'
 const AUTH_PROVIDER_KEY = 'manshot_auth_provider'
+const ACCOUNT_SESSIONS_KEY = 'manshot_account_sessions'
 
 export function inferAccountProviderByEmail(email) {
   const normalizedEmail = (email || '').trim().toLowerCase()
@@ -45,6 +46,32 @@ function readStoredAccounts() {
   } catch {
     return []
   }
+}
+
+function readStoredAccountSessions() {
+  if (typeof window === 'undefined') {
+    return {}
+  }
+
+  try {
+    const rawSessions = localStorage.getItem(ACCOUNT_SESSIONS_KEY)
+    const parsedSessions = rawSessions ? JSON.parse(rawSessions) : {}
+    if (!parsedSessions || typeof parsedSessions !== 'object' || Array.isArray(parsedSessions)) {
+      return {}
+    }
+
+    return parsedSessions
+  } catch {
+    return {}
+  }
+}
+
+function writeStoredAccountSessions(nextSessions) {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  localStorage.setItem(ACCOUNT_SESSIONS_KEY, JSON.stringify(nextSessions))
 }
 
 export function deriveAccountDisplayName(email) {
@@ -95,7 +122,43 @@ export function rememberAccount(account) {
   ].slice(0, 5)
 
   localStorage.setItem(ACCOUNT_HISTORY_KEY, JSON.stringify(nextAccounts))
+
+  const sessionToken = (account?.token || '').trim()
+  if (sessionToken) {
+    const currentSessions = readStoredAccountSessions()
+    const nextSessions = {
+      ...currentSessions,
+      [email]: {
+        token: sessionToken,
+        provider,
+      },
+    }
+    writeStoredAccountSessions(nextSessions)
+  }
+
   return nextAccounts
+}
+
+export function activateStoredAccountSession(email) {
+  if (typeof window === 'undefined') {
+    return false
+  }
+
+  const normalizedEmail = (email || '').trim().toLowerCase()
+  if (!normalizedEmail) {
+    return false
+  }
+
+  const accountSession = readStoredAccountSessions()[normalizedEmail]
+  const sessionToken = (accountSession?.token || '').trim()
+  if (!sessionToken) {
+    return false
+  }
+
+  localStorage.setItem(TOKEN_KEY, sessionToken)
+  const provider = accountSession?.provider === 'google' ? 'google' : inferAccountProviderByEmail(normalizedEmail)
+  localStorage.setItem(AUTH_PROVIDER_KEY, provider)
+  return true
 }
 
 export function removeStoredAccount(email) {
@@ -110,6 +173,13 @@ export function removeStoredAccount(email) {
 
   const nextAccounts = readStoredAccounts().filter((item) => item.email !== normalizedEmail)
   localStorage.setItem(ACCOUNT_HISTORY_KEY, JSON.stringify(nextAccounts))
+
+  const currentSessions = readStoredAccountSessions()
+  if (currentSessions[normalizedEmail]) {
+    delete currentSessions[normalizedEmail]
+    writeStoredAccountSessions(currentSessions)
+  }
+
   return nextAccounts
 }
 
@@ -119,6 +189,7 @@ export function clearStoredAccounts() {
   }
 
   localStorage.removeItem(ACCOUNT_HISTORY_KEY)
+  localStorage.removeItem(ACCOUNT_SESSIONS_KEY)
 }
 
 const api = axios.create({

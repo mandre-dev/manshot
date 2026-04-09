@@ -6,7 +6,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Plus, User, LogOut, FileText } from 'lucide-react'
 import { useGoogleLogin } from '@react-oauth/google'
 import logo from '../assets/logo-manshot.png'
-import { clearToken, deriveAccountDisplayName, getMe, getStoredAccounts, googleLogin, inferAccountProviderByEmail, rememberAccount, removeStoredAccount, saveToken, setAuthProvider } from '../services/api'
+import { activateStoredAccountSession, clearToken, deriveAccountDisplayName, getMe, getStoredAccounts, googleLogin, inferAccountProviderByEmail, rememberAccount, removeStoredAccount, saveToken, setAuthProvider } from '../services/api'
 
 const links = [
   { path: '/', icon: '⚡', label: 'Dashboard' },
@@ -122,12 +122,30 @@ export default function Navbar() {
     navigate('/login')
   }
 
-  const handleSelectStoredAccount = (account, isCurrentAccount) => {
+  const handleSelectStoredAccount = async (account, isCurrentAccount) => {
     if (isCurrentAccount) {
       return
     }
 
     closeAddAccountModal()
+
+    const switchedWithStoredSession = activateStoredAccountSession(account?.email)
+    if (switchedWithStoredSession) {
+      try {
+        const me = await getMe()
+        const activeEmail = me?.data?.email || account?.email || 'Conta conectada'
+        const displayName = deriveAccountDisplayName(activeEmail)
+        const provider = account?.provider || inferAccountProviderByEmail(activeEmail)
+        setAccountEmail(activeEmail)
+        setAccountName(displayName)
+        setRecentAccounts(rememberAccount({ email: activeEmail, name: displayName, provider }))
+        setIsMenuOpen(false)
+        navigate('/', { replace: true })
+        return
+      } catch {
+        // Se a sessão salva expirou, cai no fluxo padrão de autenticação.
+      }
+    }
 
     const currentAccountProvider = inferAccountProviderByEmail(accountEmail)
     if (currentAccountProvider === 'local') {
@@ -177,7 +195,7 @@ export default function Navbar() {
         const displayName = deriveAccountDisplayName(email)
         setAccountEmail(email)
         setAccountName(displayName)
-        setRecentAccounts(rememberAccount({ email, name: displayName, provider: 'google' }))
+        setRecentAccounts(rememberAccount({ email, name: displayName, provider: 'google', token: res.data.access_token }))
         setIsMenuOpen(false)
         navigate('/', { replace: true })
       } catch {
