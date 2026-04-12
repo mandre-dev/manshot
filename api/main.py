@@ -33,9 +33,23 @@ def ensure_campaign_attachments_column() -> None:
                 )
 
 
+def ensure_contact_pinned_column() -> None:
+    inspector = inspect(engine)
+    if "contacts" not in inspector.get_table_names():
+        return
+
+    existing_columns = {column["name"] for column in inspector.get_columns("contacts")}
+    if "pinned" in existing_columns:
+        return
+
+    with engine.begin() as connection:
+        connection.execute(text("ALTER TABLE contacts ADD COLUMN pinned BOOLEAN DEFAULT 0"))
+
+
 # Cria as tabelas no banco de dados automaticamente
 Base.metadata.create_all(bind=engine)
 ensure_campaign_attachments_column()
+ensure_contact_pinned_column()
 
 app = FastAPI(
     title="Manshot API",

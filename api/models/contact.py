@@ -4,7 +4,7 @@ Tabela de contatos no banco de dados.
 Cada contato tem nome e destinos para cada canal.
 """
 
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, DateTime, Boolean
 from sqlalchemy.sql import func
 from api.database import Base
 
@@ -18,6 +18,7 @@ class Contact(Base):
     email = Column(String, nullable=True)
     phone = Column(String, nullable=True)
     telegram_id = Column(String, nullable=True)
+    pinned = Column(Boolean, default=False)
     created_at = Column(DateTime, server_default=func.now())
 
     def __repr__(self):

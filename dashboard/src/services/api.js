@@ -239,6 +239,7 @@ export const getContacts = () => api.get('/contacts/')
 export const createContact = (data) => api.post('/contacts/', data)
 export const updateContact = (id, data) => api.put(`/contacts/${id}`, data)
 export const deleteContact = (id) => api.delete(`/contacts/${id}`)
+export const pinContact = (id, pinned) => api.post(`/contacts/${id}/pin`, { pinned: !!pinned })
 
 // ── Campanhas ───────────────────────────────────────
 export const getCampaigns = () => api.get('/campaigns/')
