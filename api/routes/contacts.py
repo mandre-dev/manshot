@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from api.database import get_db
 from api.models.contact import Contact
-from api.schemas.contact import ContactCreate, ContactResponse
+from api.schemas.contact import ContactCreate, ContactPinRequest, ContactResponse
 from typing import List
 from core.auth import get_current_user
 
@@ -102,3 +102,26 @@ def delete_contact(
     db.delete(contact)
     db.commit()
     return {"message": "Contato removido com sucesso"}
+
+
+@router.post("/{contact_id}/pin", response_model=ContactResponse)
+def pin_contact(
+    contact_id: int,
+    payload: ContactPinRequest,
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user),
+):
+    """Fixa ou desafixa contato no topo da fila."""
+    owner_email = current_user.strip().lower()
+    contact = (
+        db.query(Contact)
+        .filter(Contact.id == contact_id, Contact.owner_email == owner_email)
+        .first()
+    )
+    if not contact:
+        raise HTTPException(status_code=404, detail="Contato não encontrado")
+
+    contact.pinned = bool(payload.pinned)
+    db.commit()
+    db.refresh(contact)
+    return contact

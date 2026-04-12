@@ -1,7 +1,8 @@
 // Contacts.jsx — Manshot Orange Theme + Edit/Delete Menu
 
 import { useEffect, useState, useRef } from 'react'
-import { getAuthProvider, getContacts, createContact, updateContact, deleteContact, getMe } from '../services/api'
+import { Pin } from 'lucide-react'
+import { getAuthProvider, getContacts, createContact, updateContact, deleteContact, pinContact, getMe } from '../services/api'
 import * as XLSX from 'xlsx'
 import { useGoogleLogin } from '@react-oauth/google'
 import excelLogo from '../assets/excel-logo.svg'
@@ -19,7 +20,7 @@ const inputStyle = {
   fontFamily: "'Space Mono', monospace",
 }
 
-function DropdownMenu({ contact, onEdit, onDelete }) {
+function DropdownMenu({ contact, onEdit, onDelete, onTogglePin }) {
   const [open, setOpen] = useState(false)
   const [isMenuHovered, setIsMenuHovered] = useState(false)
   const [isMenuPressed, setIsMenuPressed] = useState(false)
@@ -85,6 +86,33 @@ function DropdownMenu({ contact, onEdit, onDelete }) {
             boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
           }}
         >
+          <button
+            onClick={() => {
+              onTogglePin(contact)
+              setOpen(false)
+            }}
+            style={{
+              display: 'block',
+              width: '100%',
+              padding: '10px 16px',
+              background: 'transparent',
+              border: 'none',
+              color: contact.pinned ? '#fbbf24' : '#e5e7eb',
+              fontSize: '12px',
+              cursor: 'pointer',
+              textAlign: 'left',
+              fontFamily: "'Space Mono', monospace",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#3b2a08'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent'
+            }}
+          >
+            {contact.pinned ? '📌 Desafixar' : '📍 Fixar'}
+          </button>
+
           <button
             onClick={() => {
               onEdit(contact)
@@ -262,6 +290,11 @@ export default function Contacts() {
     load()
   }
 
+  async function handleTogglePinContact(contact) {
+    await pinContact(contact.id, !contact.pinned)
+    load()
+  }
+
   async function handleImportExcel(e) {
     const file = e.target.files[0]
     if (!file) return
@@ -346,6 +379,19 @@ export default function Contacts() {
     onError: () => {
       alert('Falha ao autenticar com Google.')
     },
+  })
+
+  const sortedContacts = [...contacts].sort((a, b) => {
+    const pinnedA = a.pinned ? 1 : 0
+    const pinnedB = b.pinned ? 1 : 0
+    if (pinnedA !== pinnedB) {
+      return pinnedB - pinnedA
+    }
+
+    const dateA = new Date(a.created_at || 0).getTime()
+    const dateB = new Date(b.created_at || 0).getTime()
+    if (dateA !== dateB) return dateB - dateA
+    return (b.id || 0) - (a.id || 0)
   })
 
   return (
@@ -667,7 +713,7 @@ export default function Contacts() {
             Carregando...
           </div>
         ) : (
-          contacts.map((c) => (
+          sortedContacts.map((c) => (
             <div
               key={c.id}
               style={{
@@ -687,6 +733,11 @@ export default function Contacts() {
               <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div style={{ width: '3px', height: '20px', borderRadius: '2px', background: '#FF6B00' }} />
                 <span style={{ color: '#e5e7eb', fontSize: '13px', fontFamily: "'Space Mono', monospace" }}>{c.name}</span>
+                {c.pinned && (
+                  <span title="Contato fixado" style={{ display: 'inline-flex', alignItems: 'center', color: '#fbbf24', flexShrink: 0 }}>
+                    <Pin size={13} />
+                  </span>
+                )}
               </div>
               <div style={{ flex: 1, color: '#9ca3af', fontSize: '13px', fontFamily: "'Space Mono', monospace" }}>
                 {c.email || '—'}
@@ -698,7 +749,7 @@ export default function Contacts() {
                 {c.telegram_id || '—'}
               </div>
               <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
-                <DropdownMenu contact={c} onEdit={handleEdit} onDelete={handleDelete} />
+                <DropdownMenu contact={c} onEdit={handleEdit} onDelete={handleDelete} onTogglePin={handleTogglePinContact} />
               </div>
             </div>
           ))
