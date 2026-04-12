@@ -46,6 +46,10 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
 
 
+class GoogleLoginRequest(BaseModel):
+    access_token: str = Field(min_length=20)
+
+
 class CredentialsCheckResponse(BaseModel):
     valid: bool
 

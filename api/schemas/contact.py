@@ -24,7 +24,12 @@ class ContactResponse(BaseModel):
     email: Optional[str] = None
     phone: Optional[str] = None
     telegram_id: Optional[str] = None
+    pinned: bool = False
     created_at: datetime
 
     class Config:
         from_attributes = True
+
+
+class ContactPinRequest(BaseModel):
+    pinned: bool

@@ -7,19 +7,21 @@ import Dashboard from './pages/Dashboard'
 import Contacts from './pages/Contacts'
 import Campaigns from './pages/Campaigns'
 import Login from './pages/Login'
-import { clearToken } from './services/api'
 
 
 function AppLayout() {
-  function handleLogout() {
-    clearToken()
-    window.location.href = '/login'
-  }
-
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#0a0e1a' }}>
-      <Navbar onLogout={handleLogout} />
-      <main style={{ marginLeft: '180px', flex: 1, padding: '24px' }}>
+      <Navbar />
+      <main style={{
+        marginLeft: '180px',
+        width: 'calc(100% - 180px)',
+        maxWidth: 'calc(100% - 180px)',
+        boxSizing: 'border-box',
+        flex: 1,
+        padding: '16px',
+        overflowX: 'hidden',
+      }}>
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/contacts" element={<Contacts />} />
