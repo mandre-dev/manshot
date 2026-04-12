@@ -13,7 +13,15 @@ function AppLayout() {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#0a0e1a' }}>
       <Navbar />
-      <main style={{ marginLeft: '180px', flex: 1, padding: '24px' }}>
+      <main style={{
+        marginLeft: '180px',
+        width: 'calc(100% - 180px)',
+        maxWidth: 'calc(100% - 180px)',
+        boxSizing: 'border-box',
+        flex: 1,
+        padding: '16px',
+        overflowX: 'hidden',
+      }}>
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/contacts" element={<Contacts />} />

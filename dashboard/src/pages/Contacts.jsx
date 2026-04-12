@@ -81,7 +81,7 @@ function DropdownMenu({ contact, onEdit, onDelete, onTogglePin }) {
             border: '2px solid #2a1a0a',
             borderRadius: '8px',
             overflow: 'hidden',
-            zIndex: 100,
+            zIndex: 99999,
             minWidth: '130px',
             boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
           }}
