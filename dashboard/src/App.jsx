@@ -6,6 +6,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import Dashboard from './pages/Dashboard'
 import Contacts from './pages/Contacts'
 import Campaigns from './pages/Campaigns'
+import Credentials from './pages/Credentials'
 import Login from './pages/Login'
 
 
@@ -26,6 +27,7 @@ function AppLayout() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/contacts" element={<Contacts />} />
           <Route path="/campaigns" element={<Campaigns />} />
+          <Route path="/credentials" element={<Credentials />} />
         </Routes>
       </main>
     </div>
