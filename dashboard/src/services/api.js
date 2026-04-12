@@ -246,6 +246,7 @@ export const createCampaign = (data) => api.post('/campaigns/', data)
 export const updateCampaign = (id, data) => api.put(`/campaigns/${id}`, data)
 export const deleteCampaign = (id) => api.delete(`/campaigns/${id}`)
 export const resetCampaignStatus = (id) => api.post(`/campaigns/${id}/reset`)
+export const pinCampaign = (id, pinned) => api.post(`/campaigns/${id}/pin`, { pinned: !!pinned })
 export const sendCampaign = (id, contactIds = null, intervalSeconds = 0) => {
   const payload = {
     ids: contactIds,

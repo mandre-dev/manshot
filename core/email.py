@@ -150,7 +150,8 @@ class EmailChannel(BaseChannel):
                         {
                             "url": item.get("url"),
                             "filename": item.get("filename") or filename,
-                            "kind": item.get("kind") or ("image" if mime_type.startswith("image/") else "file"),
+                            "kind": item.get("kind")
+                            or ("image" if mime_type.startswith("image/") else "file"),
                             "bytes": file_bytes,
                             "mime_type": mime_type,
                         }

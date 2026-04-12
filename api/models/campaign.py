@@ -34,6 +34,7 @@ class Campaign(Base):
     image_url = Column(String, nullable=True)  # URL da imagem no ImgBB
     attachments_json = Column(Text, nullable=True)  # Lista de anexos em JSON
     task_id = Column(String, nullable=True)  # ID da task Celery associada
+    pinned = Column(Boolean, default=False)  # Campanha fixada no topo
 
     # Canais — o usuário escolhe um ou mais
     use_email = Column(Boolean, default=False)

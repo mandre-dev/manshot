@@ -157,7 +157,9 @@ class TelegramChannel(BaseChannel):
                         continue
 
                     filename, file_bytes, mime_type = resolved
-                    kind = item.get("kind") or ("image" if mime_type.startswith("image/") else "file")
+                    kind = item.get("kind") or (
+                        "image" if mime_type.startswith("image/") else "file"
+                    )
                     caption = personalized_message if index == 0 else ""
 
                     if kind == "image":

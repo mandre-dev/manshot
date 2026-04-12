@@ -49,7 +49,6 @@ def dispatch_campaign(
     from api.database import SessionLocal
     from api.models.campaign import Campaign, StatusEnum
 
-
     def normalize_attachments() -> list[dict]:
         normalized = []
         extra_attachments = kwargs.get("attachments") or []

@@ -45,6 +45,7 @@ class CampaignResponse(BaseModel):
     use_sms: bool
     use_telegram: bool
     status: StatusEnum
+    pinned: bool = False
     total: int
     success: int
     failed: int
@@ -59,3 +60,7 @@ class CampaignSendRequest(BaseModel):
 
     ids: Optional[list[int]] = None
     interval_seconds: float = Field(default=0, ge=0)
+
+
+class CampaignPinRequest(BaseModel):
+    pinned: bool
