@@ -192,6 +192,7 @@ def send_campaign(
 
     async_result = dispatch_campaign.delay(
         campaign_id=campaign.id,
+        owner_email=owner_email,
         contacts=contacts_data,
         message=campaign.message,
         use_email=campaign.use_email,
