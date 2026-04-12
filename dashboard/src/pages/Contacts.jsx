@@ -181,6 +181,8 @@ export default function Contacts() {
   const [hoveredField, setHoveredField] = useState('')
   const [isAddHovered, setIsAddHovered] = useState(false)
   const [isAddPressed, setIsAddPressed] = useState(false)
+  const [isCancelHovered, setIsCancelHovered] = useState(false)
+  const [isCancelPressed, setIsCancelPressed] = useState(false)
   const [isImportHovered, setIsImportHovered] = useState(false)
   const [isImportPressed, setIsImportPressed] = useState(false)
   const [isImportMenuOpen, setIsImportMenuOpen] = useState(false)
@@ -190,6 +192,16 @@ export default function Contacts() {
   const importMenuRef = useRef(null)
 
   const googleImportUnavailableMessage = 'Importacao do Google indisponivel para esta conta. Para importar contatos do Google, entre com uma conta Google.'
+
+  function handleCancelEdit() {
+    setIsCancelPressed(true)
+    window.setTimeout(() => {
+      setEditingId(null)
+      setForm({ name: '', email: '', phone: '', telegram_id: '' })
+      setIsCancelPressed(false)
+      setIsCancelHovered(false)
+    }, 90)
+  }
 
   function getAnimatedInputStyle(field) {
     const isFocused = focusedField === field
@@ -520,19 +532,34 @@ export default function Contacts() {
             {editingId && (
               <button
                 type="button"
-                onClick={() => {
-                  setEditingId(null)
-                  setForm({ name: '', email: '', phone: '', telegram_id: '' })
-                }}
+                onClick={handleCancelEdit}
                 style={{
-                  background: 'transparent',
-                  color: '#9ca3af',
-                  border: '2px solid #2a1a0a',
+                  background: isCancelHovered ? '#1a1208' : 'transparent',
+                  color: isCancelHovered ? '#e5e7eb' : '#9ca3af',
+                  border: `2px solid ${isCancelHovered ? '#FF6B004d' : '#2a1a0a'}`,
                   borderRadius: '8px',
                   padding: '10px 20px',
                   fontSize: '13px',
                   cursor: 'pointer',
                   fontFamily: "'Space Mono', monospace",
+                  transform: isCancelPressed
+                    ? 'translateY(1px) scale(0.99)'
+                    : isCancelHovered
+                      ? 'translateY(-1px) scale(1.01)'
+                      : 'translateY(0) scale(1)',
+                  boxShadow: isCancelPressed
+                    ? 'inset 0 0 0 1px #FF6B0077'
+                    : isCancelHovered
+                      ? '0 6px 16px #FF6B001a'
+                      : 'none',
+                  transition: 'all 0.12s ease',
+                }}
+                onMouseEnter={() => setIsCancelHovered(true)}
+                onMouseDown={() => setIsCancelPressed(true)}
+                onMouseUp={() => setIsCancelPressed(false)}
+                onMouseLeave={() => {
+                  setIsCancelHovered(false)
+                  setIsCancelPressed(false)
                 }}
               >
                 Cancelar
