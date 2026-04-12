@@ -195,7 +195,7 @@ function DropdownMenu({ campaign, onEdit, onDelete, onReset, onTogglePin }) {
         <div style={{
           position: 'absolute', right: 0, bottom: '110%',
           background: '#111827', border: '2px solid #2a1a0a',
-          borderRadius: '8px', overflow: 'hidden', zIndex: 100,
+          borderRadius: '8px', overflow: 'hidden', zIndex: 99999,
           minWidth: '130px', boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
         }}>
           <button onClick={() => { onTogglePin(campaign); setOpen(false) }} style={{
@@ -326,6 +326,7 @@ export default function Campaigns() {
   const [isModalCancelPressed, setIsModalCancelPressed] = useState(false)
   const [isIntervalHovered, setIsIntervalHovered] = useState(false)
   const [isIntervalFocused, setIsIntervalFocused] = useState(false)
+  const [isNarrowScreen, setIsNarrowScreen] = useState(() => window.innerWidth <= 1100)
 
   function getAnimatedInputStyle(field) {
     const isFocused = focusedField === field
@@ -387,6 +388,12 @@ export default function Campaigns() {
   useEffect(() => {
     load()
     loadContacts()
+  }, [])
+
+  useEffect(() => {
+    const onResize = () => setIsNarrowScreen(window.innerWidth <= 1100)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
   }, [])
 
   useEffect(() => {
@@ -562,13 +569,13 @@ export default function Campaigns() {
       {/* Modal de loading/sucesso */}
       {sendingModalStatus && <SendingModal status={sendingModalStatus} />}
 
-      <div style={{ marginBottom: '24px' }}>
+      <div style={{ marginBottom: isNarrowScreen ? '16px' : '24px' }}>
         <div style={{ color: '#6b7280', fontSize: '12px', marginBottom: '4px', fontFamily: "'Space Mono', monospace" }}>Gerenciamento</div>
         <div style={{ color: '#fff', fontSize: '22px', fontFamily: "'Fira Code', monospace", fontWeight: '700', letterSpacing: '1.0px' }}>CAMPANHAS</div>
       </div>
 
       {/* Formulário */}
-      <div style={{ background: '#111827', border: `2px solid ${editingId ? '#FF6B00' : '#2a1a0a'}`, borderRadius: '10px', padding: '20px', marginBottom: '20px' }}>
+      <div style={{ background: '#111827', border: `2px solid ${editingId ? '#FF6B00' : '#2a1a0a'}`, borderRadius: '10px', padding: isNarrowScreen ? '14px' : '20px', marginBottom: '20px' }}>
         <div style={{ color: '#FF6B00', fontSize: '12px', fontWeight: '600', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: "'Space Mono', monospace" }}>
           {editingId ? '✏️ Editando campanha' : '+ Nova campanha'}
         </div>
@@ -628,7 +635,7 @@ export default function Campaigns() {
             )}
 
             {/* Upload */}
-            <div style={{ border: '1px dashed #2a1a0a', borderRadius: '8px', padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div style={{ border: '1px dashed #2a1a0a', borderRadius: '8px', padding: isNarrowScreen ? '12px' : '16px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: '#6b7280', fontSize: '12px', marginBottom: '10px', fontFamily: "'Space Mono', monospace", width: '100%' }}>
                 <Paperclip size={14} />
                 <span>{uploading ? 'Enviando anexos...' : 'Adicionar anexo(s) opcional(is)'}</span>
@@ -718,7 +725,7 @@ export default function Campaigns() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '24px', marginBottom: '14px' }}>
+          <div style={{ display: 'flex', gap: isNarrowScreen ? '10px' : '24px', marginBottom: '14px', flexWrap: isNarrowScreen ? 'wrap' : 'nowrap' }}>
             <CheckBox label="Email" icon="email" checked={form.use_email}
               onChange={() => setForm({ ...form, use_email: !form.use_email })} />
             <CheckBox label="SMS" icon="sms" checked={form.use_sms}
@@ -727,7 +734,7 @@ export default function Campaigns() {
               onChange={() => setForm({ ...form, use_telegram: !form.use_telegram })} />
           </div>
 
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: isNarrowScreen ? 'wrap' : 'nowrap' }}>
             <button type="submit" style={{
               background: '#FF6B00', color: '#fff', border: 'none',
               borderRadius: '8px', padding: '10px 20px', fontSize: '13px',
@@ -793,8 +800,8 @@ export default function Campaigns() {
       </div>
 
       {/* Tabela */}
-      <div style={{ background: '#111827', border: '2px solid #2a1a0a', borderRadius: '10px', overflow: 'hidden' }}>
-        <div style={{ padding: '16px', borderBottom: '2px solid #2a1a0a' }}>
+      <div style={{ background: '#111827', border: '2px solid #2a1a0a', borderRadius: '10px', overflow: 'visible' }}>
+        <div style={{ padding: isNarrowScreen ? '12px' : '16px', borderBottom: '2px solid #2a1a0a' }}>
           <div>
             <span style={{ color: '#fff', fontSize: '14px', fontWeight: '600', fontFamily: "'Space Mono', monospace" }}>Campanhas</span>
             <span style={{ color: '#6b7280', fontSize: '12px', marginLeft: '8px', fontFamily: "'Space Mono', monospace" }}>({campaigns.length} total)</span>
@@ -803,10 +810,12 @@ export default function Campaigns() {
 
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'minmax(180px, 2fr) minmax(220px, 1.6fr) minmax(120px, 1fr) minmax(100px, 0.8fr) minmax(80px, 0.6fr) minmax(80px, 0.6fr) minmax(120px, 0.9fr) minmax(56px, 0.3fr)',
-          padding: '10px 16px',
+          gridTemplateColumns: isNarrowScreen
+            ? '2fr 1.35fr 0.85fr 0.95fr 0.55fr 0.55fr 0.8fr 0.35fr'
+            : 'minmax(180px, 2fr) minmax(220px, 1.6fr) minmax(120px, 1fr) minmax(100px, 0.8fr) minmax(80px, 0.6fr) minmax(80px, 0.6fr) minmax(120px, 0.9fr) minmax(56px, 0.3fr)',
+          padding: isNarrowScreen ? '8px 10px' : '10px 16px',
           borderBottom: '2px solid #2a1a0a',
-          gap: '12px',
+          gap: isNarrowScreen ? '8px' : '12px',
           alignItems: 'center',
         }}>
           {['Campanha', 'Anexo', 'Canais', 'Status', 'Total', 'Sucesso', 'Disparar', ''].map(h => (
@@ -819,10 +828,12 @@ export default function Campaigns() {
         ) : sortedCampaigns.map(c => (
           <div key={c.id} style={{
             display: 'grid',
-            gridTemplateColumns: 'minmax(180px, 2fr) minmax(220px, 1.6fr) minmax(120px, 1fr) minmax(100px, 0.8fr) minmax(80px, 0.6fr) minmax(80px, 0.6fr) minmax(120px, 0.9fr) minmax(56px, 0.3fr)',
+            gridTemplateColumns: isNarrowScreen
+              ? '2fr 1.35fr 0.85fr 0.95fr 0.55fr 0.55fr 0.8fr 0.35fr'
+              : 'minmax(180px, 2fr) minmax(220px, 1.6fr) minmax(120px, 1fr) minmax(100px, 0.8fr) minmax(80px, 0.6fr) minmax(80px, 0.6fr) minmax(120px, 0.9fr) minmax(56px, 0.3fr)',
             alignItems: 'center',
-            padding: '12px 16px', borderBottom: '2px solid #2a1a0a',
-            gap: '12px',
+            padding: isNarrowScreen ? '10px' : '12px 16px', borderBottom: '2px solid #2a1a0a',
+            gap: isNarrowScreen ? '8px' : '12px',
             transition: 'background 0.15s',
           }}
             onMouseEnter={e => e.currentTarget.style.background = '#1a1208'}
@@ -873,8 +884,8 @@ export default function Campaigns() {
                 style={{
                   background: sending === c.id ? '#2a1a0a' : '#FF6B0022',
                   color: '#FF6B00', border: '1px solid #FF6B0044',
-                  borderRadius: '6px', padding: '4px 12px',
-                  fontSize: '11px', fontWeight: '600',
+                  borderRadius: '6px', padding: isNarrowScreen ? '4px 8px' : '4px 12px',
+                  fontSize: isNarrowScreen ? '10px' : '11px', fontWeight: '600',
                   cursor: sending === c.id || c.status === 'running' ? 'not-allowed' : 'pointer',
                   transition: 'all 0.12s ease',
                   opacity: c.status === 'running' ? 0.5 : 1,
@@ -906,7 +917,7 @@ export default function Campaigns() {
                   e.currentTarget.style.boxShadow = '0 4px 12px #FF6B0022'
                 }}
               >
-                {sending === c.id ? '...' : '▶ Disparar'}
+                {sending === c.id ? '...' : (isNarrowScreen ? '▶' : '▶ Disparar')}
               </button>
             </div>
             <div style={{ minWidth: 0, display: 'flex', justifyContent: 'flex-end' }}>
