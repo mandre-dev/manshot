@@ -20,14 +20,18 @@ def ensure_campaign_attachments_column() -> None:
     required_columns = {
         "attachments_json": "TEXT",
         "task_id": "VARCHAR",
+        "pinned": "BOOLEAN DEFAULT 0",
     }
 
     with engine.begin() as connection:
         for column_name, column_type in required_columns.items():
             if column_name not in existing_columns:
                 connection.execute(
-                    text(f"ALTER TABLE campaigns ADD COLUMN {column_name} {column_type}")
+                    text(
+                        f"ALTER TABLE campaigns ADD COLUMN {column_name} {column_type}"
+                    )
                 )
+
 
 # Cria as tabelas no banco de dados automaticamente
 Base.metadata.create_all(bind=engine)

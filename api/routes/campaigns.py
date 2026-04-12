@@ -12,7 +12,12 @@ from sqlalchemy.orm import Session
 from api.database import get_db
 from api.models.campaign import Campaign, StatusEnum
 from api.models.contact import Contact
-from api.schemas.campaign import CampaignCreate, CampaignResponse, CampaignSendRequest
+from api.schemas.campaign import (
+    CampaignCreate,
+    CampaignPinRequest,
+    CampaignResponse,
+    CampaignSendRequest,
+)
 from api.tasks import dispatch_campaign
 from typing import List
 from core.auth import get_current_user
@@ -73,7 +78,9 @@ def create_campaign(
     campaign_data = campaign.model_dump()
     attachments = _normalize_attachments(campaign)
     campaign_data["attachments"] = attachments
-    campaign_data["image_url"] = attachments[0]["url"] if attachments else campaign_data.get("image_url")
+    campaign_data["image_url"] = (
+        attachments[0]["url"] if attachments else campaign_data.get("image_url")
+    )
     db_campaign = Campaign(owner_email=owner_email, **campaign_data)
     db.add(db_campaign)
     db.commit()
@@ -192,13 +199,17 @@ def send_campaign(
         use_telegram=campaign.use_telegram,
         image_url=campaign.image_url,
         attachments=campaign.attachments
-        or ([
-            {
-                "url": campaign.image_url,
-                "filename": _attachment_filename_from_url(campaign.image_url),
-                "kind": "image" if _is_image_url(campaign.image_url) else "file",
-            }
-        ] if campaign.image_url else []),
+        or (
+            [
+                {
+                    "url": campaign.image_url,
+                    "filename": _attachment_filename_from_url(campaign.image_url),
+                    "kind": "image" if _is_image_url(campaign.image_url) else "file",
+                }
+            ]
+            if campaign.image_url
+            else []
+        ),
         email_subject=campaign.email_subject,
         sms_from=campaign.sms_from,
         telegram_signature=campaign.telegram_signature,
@@ -276,6 +287,29 @@ def reset_campaign_status(
         raise HTTPException(status_code=404, detail="Campanha não encontrada")
 
     campaign.status = StatusEnum.pending
+    db.commit()
+    db.refresh(campaign)
+    return campaign
+
+
+@router.post("/{campaign_id}/pin", response_model=CampaignResponse)
+def pin_campaign(
+    campaign_id: int,
+    payload: CampaignPinRequest,
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user),
+):
+    """Fixa ou desafixa campanha no topo da fila."""
+    owner_email = current_user.strip().lower()
+    campaign = (
+        db.query(Campaign)
+        .filter(Campaign.id == campaign_id, Campaign.owner_email == owner_email)
+        .first()
+    )
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campanha não encontrada")
+
+    campaign.pinned = bool(payload.pinned)
     db.commit()
     db.refresh(campaign)
     return campaign

@@ -1,8 +1,8 @@
 // Campaigns.jsx — Manshot Orange Theme + Image Upload + Menu
 
 import { useEffect, useState, useRef } from 'react'
-import { getCampaigns, createCampaign, updateCampaign, deleteCampaign, resetCampaignStatus, sendCampaign, uploadAttachment, getContacts } from '../services/api'
-import { Mail, MessageSquare, Send, CheckCircle, X, Paperclip } from 'lucide-react'
+import { getCampaigns, createCampaign, updateCampaign, deleteCampaign, pinCampaign, resetCampaignStatus, sendCampaign, uploadAttachment, getContacts } from '../services/api'
+import { Mail, MessageSquare, Send, CheckCircle, X, Paperclip, Pin } from 'lucide-react'
 import RichEditor from '../components/RichEditor'
 
 
@@ -140,7 +140,7 @@ function normalizeUploadedAttachment(uploadData, file) {
   }
 }
 
-function DropdownMenu({ campaign, onEdit, onDelete, onReset }) {
+function DropdownMenu({ campaign, onEdit, onDelete, onReset, onTogglePin }) {
   const [open, setOpen] = useState(false)
   const [isMenuHovered, setIsMenuHovered] = useState(false)
   const [isMenuPressed, setIsMenuPressed] = useState(false)
@@ -198,6 +198,15 @@ function DropdownMenu({ campaign, onEdit, onDelete, onReset }) {
           borderRadius: '8px', overflow: 'hidden', zIndex: 100,
           minWidth: '130px', boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
         }}>
+          <button onClick={() => { onTogglePin(campaign); setOpen(false) }} style={{
+            display: 'block', width: '100%', padding: '10px 16px',
+            background: 'transparent', border: 'none', color: campaign.pinned ? '#fbbf24' : '#e5e7eb',
+            fontSize: '12px', cursor: 'pointer', textAlign: 'left',
+            fontFamily: "'Space Mono', monospace",
+          }}
+            onMouseEnter={e => e.currentTarget.style.background = '#3b2a08'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          >{campaign.pinned ? '📌 Desafixar' : '📍 Fixar'}</button>
           {campaign.status === 'running' && (
             <button onClick={() => { onReset(campaign.id); setOpen(false) }} style={{
               display: 'block', width: '100%', padding: '10px 16px',
@@ -473,6 +482,11 @@ export default function Campaigns() {
     load()
   }
 
+  async function handleTogglePinCampaign(campaign) {
+    await pinCampaign(campaign.id, !campaign.pinned)
+    load()
+  }
+
   async function handleSend(id) {
     if (!confirm('Disparar campanha agora?')) return
     setCampaignToSend(id)
@@ -529,6 +543,19 @@ export default function Campaigns() {
   const selectedCount = selectedContacts.size
   const totalStaggerSeconds = selectedCount > 1 ? (selectedCount - 1) * intervalSeconds : 0
   const selectedCampaignName = campaigns.find((c) => c.id === campaignToSend)?.name || ''
+  const sortedCampaigns = [...campaigns].sort((a, b) => {
+    const pinnedA = a.pinned ? 1 : 0
+    const pinnedB = b.pinned ? 1 : 0
+    if (pinnedA !== pinnedB) {
+      return pinnedB - pinnedA
+    }
+
+    const dateA = new Date(a.created_at || 0).getTime()
+    const dateB = new Date(b.created_at || 0).getTime()
+
+    if (dateA !== dateB) return dateB - dateA
+    return (b.id || 0) - (a.id || 0)
+  })
 
   return (
     <div>
@@ -768,8 +795,10 @@ export default function Campaigns() {
       {/* Tabela */}
       <div style={{ background: '#111827', border: '2px solid #2a1a0a', borderRadius: '10px', overflow: 'hidden' }}>
         <div style={{ padding: '16px', borderBottom: '2px solid #2a1a0a' }}>
-          <span style={{ color: '#fff', fontSize: '14px', fontWeight: '600', fontFamily: "'Space Mono', monospace" }}>Campanhas</span>
-          <span style={{ color: '#6b7280', fontSize: '12px', marginLeft: '8px', fontFamily: "'Space Mono', monospace" }}>({campaigns.length} total)</span>
+          <div>
+            <span style={{ color: '#fff', fontSize: '14px', fontWeight: '600', fontFamily: "'Space Mono', monospace" }}>Campanhas</span>
+            <span style={{ color: '#6b7280', fontSize: '12px', marginLeft: '8px', fontFamily: "'Space Mono', monospace" }}>({campaigns.length} total)</span>
+          </div>
         </div>
 
         <div style={{
@@ -787,7 +816,7 @@ export default function Campaigns() {
 
         {loading ? (
           <div style={{ padding: '24px', textAlign: 'center', color: '#FF6B00', fontFamily: "'Space Mono', monospace" }}>Carregando...</div>
-        ) : campaigns.map(c => (
+        ) : sortedCampaigns.map(c => (
           <div key={c.id} style={{
             display: 'grid',
             gridTemplateColumns: 'minmax(180px, 2fr) minmax(220px, 1.6fr) minmax(120px, 1fr) minmax(100px, 0.8fr) minmax(80px, 0.6fr) minmax(80px, 0.6fr) minmax(120px, 0.9fr) minmax(56px, 0.3fr)',
@@ -802,6 +831,11 @@ export default function Campaigns() {
             <div style={{ minWidth: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{ width: '3px', height: '20px', borderRadius: '2px', background: '#FF6B00' }} />
               <span style={{ color: '#e5e7eb', fontSize: '13px', fontFamily: "'Space Mono', monospace", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
+              {c.pinned && (
+                <span title="Campanha fixada" style={{ display: 'inline-flex', alignItems: 'center', color: '#fbbf24', flexShrink: 0 }}>
+                  <Pin size={13} />
+                </span>
+              )}
             </div>
             {(() => {
               const campaignAttachments = normalizeCampaignAttachments(c)
@@ -876,7 +910,7 @@ export default function Campaigns() {
               </button>
             </div>
             <div style={{ minWidth: 0, display: 'flex', justifyContent: 'flex-end' }}>
-              <DropdownMenu campaign={c} onEdit={handleEdit} onDelete={handleDelete} onReset={handleResetCampaign} />
+              <DropdownMenu campaign={c} onEdit={handleEdit} onDelete={handleDelete} onReset={handleResetCampaign} onTogglePin={handleTogglePinCampaign} />
             </div>
           </div>
         ))}
