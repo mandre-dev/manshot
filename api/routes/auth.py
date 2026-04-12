@@ -19,6 +19,8 @@ from api.schemas.auth import (
     GoogleLoginRequest,
     LoginRequest,
     RegisterRequest,
+    SenderCredentialsPatch,
+    SenderCredentialsResponse,
     TokenResponse,
     UserResponse,
 )
@@ -31,6 +33,39 @@ from core.auth import (
 from core.config import settings
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
+
+
+def _mask_email_address(value: str) -> str:
+    normalized = (value or "").strip()
+    if not normalized or "@" not in normalized:
+        return ""
+    local, _, domain = normalized.partition("@")
+    if len(local) <= 1:
+        return f"*@{domain}"
+    return f"{local[0]}***@{domain}"
+
+
+def _mask_api_key_tail(value: str) -> str:
+    s = (value or "").strip()
+    if len(s) <= 4:
+        return "****" if s else ""
+    return f"…{s[-4:]}"
+
+
+def _sender_credentials_response_for_user(user: User) -> SenderCredentialsResponse:
+    return SenderCredentialsResponse(
+        admin_uses_env=False,
+        email_smtp_host=user.sender_email_smtp_host,
+        email_smtp_port=user.sender_email_smtp_port,
+        email_user=user.sender_email_user,
+        email_user_masked=_mask_email_address(user.sender_email_user or ""),
+        email_password_set=bool(user.sender_email_password),
+        email_from_name=user.sender_email_from_name,
+        sms_vonage_key_masked=_mask_api_key_tail(user.sender_sms_vonage_key or ""),
+        sms_vonage_secret_set=bool(user.sender_sms_vonage_secret),
+        sms_default_from=user.sender_sms_default_from,
+        telegram_bot_token_set=bool(user.sender_telegram_bot_token),
+    )
 
 
 def has_valid_credentials(email: str, password: str, db: Session) -> bool:
@@ -178,3 +213,93 @@ def me(current_user: str = Depends(get_current_user), db: Session = Depends(get_
         )
 
     return UserResponse(email=user.email, is_admin=False)
+
+
+@router.get("/me/sender-credentials", response_model=SenderCredentialsResponse)
+def get_sender_credentials(
+    current_user: str = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    current_email = current_user.strip().lower()
+    if current_email == settings.ADMIN_EMAIL.lower():
+        return SenderCredentialsResponse(admin_uses_env=True)
+
+    user = db.query(User).filter(User.email == current_email).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Usuário não encontrado",
+        )
+
+    return _sender_credentials_response_for_user(user)
+
+
+@router.patch("/me/sender-credentials", response_model=SenderCredentialsResponse)
+def patch_sender_credentials(
+    payload: SenderCredentialsPatch,
+    current_user: str = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    current_email = current_user.strip().lower()
+    if current_email == settings.ADMIN_EMAIL.lower():
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="A conta administrativa usa as credenciais do servidor (.env).",
+        )
+
+    user = db.query(User).filter(User.email == current_email).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Usuário não encontrado",
+        )
+
+    data = payload.model_dump(exclude_unset=True)
+
+    if "email_smtp_host" in data:
+        v = data["email_smtp_host"]
+        user.sender_email_smtp_host = (v or "").strip() or None
+
+    if "email_smtp_port" in data:
+        user.sender_email_smtp_port = data["email_smtp_port"]
+
+    if "email_user" in data:
+        v = data["email_user"]
+        user.sender_email_user = (v or "").strip() or None
+
+    if "email_password" in data:
+        v = data["email_password"]
+        if v is None or v == "":
+            user.sender_email_password = None
+        else:
+            user.sender_email_password = "".join(v.split())
+
+    if "email_from_name" in data:
+        v = data["email_from_name"]
+        user.sender_email_from_name = (v or "").strip() or None
+
+    if "sms_vonage_key" in data:
+        v = data["sms_vonage_key"]
+        user.sender_sms_vonage_key = (v or "").strip() or None
+
+    if "sms_vonage_secret" in data:
+        v = data["sms_vonage_secret"]
+        if v is None or v == "":
+            user.sender_sms_vonage_secret = None
+        else:
+            user.sender_sms_vonage_secret = v
+
+    if "sms_default_from" in data:
+        v = data["sms_default_from"]
+        user.sender_sms_default_from = (v or "").strip() or None
+
+    if "telegram_bot_token" in data:
+        v = data["telegram_bot_token"]
+        if v is None or v == "":
+            user.sender_telegram_bot_token = None
+        else:
+            user.sender_telegram_bot_token = v.strip()
+
+    db.commit()
+    db.refresh(user)
+    return _sender_credentials_response_for_user(user)

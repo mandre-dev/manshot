@@ -233,6 +233,8 @@ export const register = (email, password) => api.post('/auth/register', { email,
 export const checkCredentials = (email, password) => api.post('/auth/check-credentials', { email, password })
 export const getMe = () => api.get('/auth/me')
 export const googleLogin = (accessToken) => api.post('/auth/google', { access_token: accessToken })
+export const getSenderCredentials = () => api.get('/auth/me/sender-credentials')
+export const patchSenderCredentials = (data) => api.patch('/auth/me/sender-credentials', data)
 
 // ── Contatos ────────────────────────────────────────
 export const getContacts = () => api.get('/contacts/')

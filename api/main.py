@@ -46,10 +46,37 @@ def ensure_contact_pinned_column() -> None:
         connection.execute(text("ALTER TABLE contacts ADD COLUMN pinned BOOLEAN DEFAULT 0"))
 
 
+def ensure_user_sender_credential_columns() -> None:
+    inspector = inspect(engine)
+    if "users" not in inspector.get_table_names():
+        return
+
+    existing = {column["name"] for column in inspector.get_columns("users")}
+    additions = [
+        ("sender_email_smtp_host", "VARCHAR"),
+        ("sender_email_smtp_port", "INTEGER"),
+        ("sender_email_user", "VARCHAR"),
+        ("sender_email_password", "VARCHAR"),
+        ("sender_email_from_name", "VARCHAR"),
+        ("sender_sms_vonage_key", "VARCHAR"),
+        ("sender_sms_vonage_secret", "VARCHAR"),
+        ("sender_sms_default_from", "VARCHAR"),
+        ("sender_telegram_bot_token", "VARCHAR"),
+    ]
+
+    with engine.begin() as connection:
+        for column_name, column_type in additions:
+            if column_name not in existing:
+                connection.execute(
+                    text(f"ALTER TABLE users ADD COLUMN {column_name} {column_type}")
+                )
+
+
 # Cria as tabelas no banco de dados automaticamente
 Base.metadata.create_all(bind=engine)
 ensure_campaign_attachments_column()
 ensure_contact_pinned_column()
+ensure_user_sender_credential_columns()
 
 app = FastAPI(
     title="Manshot API",

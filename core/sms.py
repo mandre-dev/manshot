@@ -20,10 +20,9 @@ class SMSChannel(BaseChannel):
     Imagens são incluídas como link na mensagem.
     """
 
-    def __init__(self):
-        self.client = Vonage(
-            Auth(api_key=settings.VONAGE_API_KEY, api_secret=settings.VONAGE_API_SECRET)
-        )
+    @staticmethod
+    def _build_client(vonage_key: str, vonage_secret: str) -> Vonage:
+        return Vonage(Auth(api_key=vonage_key, api_secret=vonage_secret))
 
     @staticmethod
     def _sanitize_phone(phone: str) -> str:
@@ -89,6 +88,8 @@ class SMSChannel(BaseChannel):
         message: str,
         image_url: str = None,
         sms_from: str = None,
+        vonage_key: str = None,
+        vonage_secret: str = None,
     ) -> DispatchResult:
         """
         Envia SMS para um contato.
@@ -96,6 +97,20 @@ class SMSChannel(BaseChannel):
         O número deve estar no formato internacional sem +: 5521999999999
         """
         try:
+            resolved_key = (vonage_key or settings.VONAGE_API_KEY or "").strip()
+            resolved_secret = (
+                vonage_secret or settings.VONAGE_API_SECRET or ""
+            ).strip()
+
+            if not resolved_key or not resolved_secret:
+                return DispatchResult(
+                    contact=contact,
+                    success=False,
+                    error="Credenciais Vonage não configuradas para este usuário.",
+                )
+
+            client = self._build_client(resolved_key, resolved_secret)
+
             sanitized_phone = self._sanitize_phone(contact.destination)
             if not self._is_valid_br_international(sanitized_phone):
                 return DispatchResult(
@@ -139,7 +154,7 @@ class SMSChannel(BaseChannel):
                 type="unicode",
             )
 
-            response: SmsResponse = self.client.sms.send(msg)
+            response: SmsResponse = client.sms.send(msg)
             status = response.messages[0].status
             success = status == "0"
             error = response.messages[0].error_text if not success else ""
