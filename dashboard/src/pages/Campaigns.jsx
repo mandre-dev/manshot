@@ -811,7 +811,7 @@ export default function Campaigns() {
         <div style={{
           display: 'grid',
           gridTemplateColumns: isNarrowScreen
-            ? '2fr 1.35fr 0.85fr 0.95fr 0.55fr 0.55fr 0.8fr 0.35fr'
+            ? '2fr 1.15fr 0.75fr 0.85fr 0.45fr 0.45fr minmax(76px, 0.95fr) minmax(54px, 0.45fr)'
             : 'minmax(180px, 2fr) minmax(220px, 1.6fr) minmax(120px, 1fr) minmax(100px, 0.8fr) minmax(80px, 0.6fr) minmax(80px, 0.6fr) minmax(120px, 0.9fr) minmax(56px, 0.3fr)',
           padding: isNarrowScreen ? '8px 10px' : '10px 16px',
           borderBottom: '2px solid #2a1a0a',
@@ -829,7 +829,7 @@ export default function Campaigns() {
           <div key={c.id} style={{
             display: 'grid',
             gridTemplateColumns: isNarrowScreen
-              ? '2fr 1.35fr 0.85fr 0.95fr 0.55fr 0.55fr 0.8fr 0.35fr'
+              ? '2fr 1.15fr 0.75fr 0.85fr 0.45fr 0.45fr minmax(76px, 0.95fr) minmax(54px, 0.45fr)'
               : 'minmax(180px, 2fr) minmax(220px, 1.6fr) minmax(120px, 1fr) minmax(100px, 0.8fr) minmax(80px, 0.6fr) minmax(80px, 0.6fr) minmax(120px, 0.9fr) minmax(56px, 0.3fr)',
             alignItems: 'center',
             padding: isNarrowScreen ? '10px' : '12px 16px', borderBottom: '2px solid #2a1a0a',
@@ -877,15 +877,19 @@ export default function Campaigns() {
             <div style={{ minWidth: 0, overflow: 'hidden' }}><StatusPill status={c.status} /></div>
             <div style={{ minWidth: 0, color: '#9ca3af', fontSize: '13px', fontFamily: "'Space Mono', monospace", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.total}</div>
             <div style={{ minWidth: 0, color: '#10b981', fontSize: '13px', fontFamily: "'Space Mono', monospace", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.success}</div>
-            <div style={{ minWidth: 0, overflow: 'hidden' }}>
+            <div style={{ minWidth: 0, overflow: 'visible' }}>
               <button
                 onClick={() => handleSend(c.id)}
                 disabled={sending === c.id || c.status === 'running'}
                 style={{
                   background: sending === c.id ? '#2a1a0a' : '#FF6B0022',
                   color: '#FF6B00', border: '1px solid #FF6B0044',
-                  borderRadius: '6px', padding: isNarrowScreen ? '4px 8px' : '4px 12px',
+                  borderRadius: '6px', padding: isNarrowScreen ? '3px 6px' : '4px 12px',
                   fontSize: isNarrowScreen ? '10px' : '11px', fontWeight: '600',
+                  minWidth: isNarrowScreen ? '72px' : 'auto',
+                  whiteSpace: isNarrowScreen ? 'normal' : 'nowrap',
+                  lineHeight: isNarrowScreen ? '1.05' : '1.2',
+                  textAlign: 'center',
                   cursor: sending === c.id || c.status === 'running' ? 'not-allowed' : 'pointer',
                   transition: 'all 0.12s ease',
                   opacity: c.status === 'running' ? 0.5 : 1,
@@ -917,7 +921,7 @@ export default function Campaigns() {
                   e.currentTarget.style.boxShadow = '0 4px 12px #FF6B0022'
                 }}
               >
-                {sending === c.id ? '...' : (isNarrowScreen ? '▶' : '▶ Disparar')}
+                {sending === c.id ? '...' : (isNarrowScreen ? <>▶<br />Disparar</> : '▶ Disparar')}
               </button>
             </div>
             <div style={{ minWidth: 0, display: 'flex', justifyContent: 'flex-end' }}>
