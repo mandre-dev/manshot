@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Plus, User, LogOut, FileText } from 'lucide-react'
+import { Plus, User, LogOut, FileText, Fingerprint } from 'lucide-react'
 import { useGoogleLogin } from '@react-oauth/google'
 import logo from '../assets/logo-manshot.png'
 import { activateStoredAccountSession, clearToken, deriveAccountDisplayName, getMe, getStoredAccounts, googleLogin, inferAccountProviderByEmail, rememberAccount, removeStoredAccount, saveToken, setAuthProvider } from '../services/api'
@@ -12,6 +12,7 @@ const links = [
   { path: '/', icon: '⚡', label: 'Dashboard' },
   { path: '/contacts', icon: '👥', label: 'Contatos' },
   { path: '/campaigns', icon: '📡', label: 'Campanhas' },
+  { path: '/credentials', icon: Fingerprint, label: 'Credenciais', iconKind: 'component' },
 ]
 
 export default function Navbar() {
@@ -282,7 +283,11 @@ export default function Navbar() {
               }
             }}
           >
-            <span style={{ fontSize: '16px' }}>{link.icon}</span>
+            {link.iconKind === 'component' ? (
+              <link.icon size={16} strokeWidth={2.2} />
+            ) : (
+              <span style={{ fontSize: '16px' }}>{link.icon}</span>
+            )}
             <span>{link.label}</span>
           </Link>
         )
