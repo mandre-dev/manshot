@@ -21,18 +21,40 @@ const badgeStyle = {
 }
 
 export default function Credentials() {
+  const credentialsGridStyle = {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+    gap: '12px',
+    marginBottom: '16px',
+  }
+
+  const credentialValueStyle = {
+    color: '#FF6B00',
+    fontSize: '20px',
+    fontWeight: '700',
+    marginTop: '14px',
+    fontFamily: "'Fira Code', monospace",
+    lineHeight: '1.25',
+  }
+
+  const emailValueStyle = {
+    ...credentialValueStyle,
+    overflowWrap: 'anywhere',
+    wordBreak: 'break-word',
+  }
+
   return (
     <div>
       <div style={{ marginBottom: '24px' }}>
         <div style={{ color: '#6b7280', fontSize: '12px', marginBottom: '4px' }}>
-          Configuração da conta
+          Gerenciamento
         </div>
         <div style={{ color: '#fff', fontSize: '22px', fontFamily: "'Fira Code', monospace", fontWeight: '700' }}>
           CREDENCIAIS
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '12px', marginBottom: '16px' }}>
+      <div style={credentialsGridStyle}>
         <div style={cardStyle}>
           <div style={badgeStyle}>
             <Fingerprint size={16} />
@@ -48,7 +70,7 @@ export default function Credentials() {
             <Shield size={16} />
             Email
           </div>
-          <div style={{ color: '#FF6B00', fontSize: '20px', fontWeight: '700', marginTop: '14px', fontFamily: "'Fira Code', monospace" }}>
+          <div style={emailValueStyle}>
             admin@manshot.local
           </div>
         </div>
@@ -58,7 +80,7 @@ export default function Credentials() {
             <KeyRound size={16} />
             Senha
           </div>
-          <div style={{ color: '#FF6B00', fontSize: '20px', fontWeight: '700', marginTop: '14px', fontFamily: "'Fira Code', monospace" }}>
+          <div style={credentialValueStyle}>
             admin123
           </div>
         </div>
