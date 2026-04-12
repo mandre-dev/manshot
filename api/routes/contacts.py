@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from api.database import get_db
 from api.models.contact import Contact
-from api.schemas.contact import ContactCreate, ContactResponse
+from api.schemas.contact import ContactCreate, ContactPinRequest, ContactResponse
 from typing import List
 from core.auth import get_current_user
 
@@ -19,9 +19,14 @@ router = APIRouter(
 
 
 @router.post("/", response_model=ContactResponse)
-def create_contact(contact: ContactCreate, db: Session = Depends(get_db)):
+def create_contact(
+    contact: ContactCreate,
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user),
+):
     """Cria um novo contato."""
-    db_contact = Contact(**contact.model_dump())
+    owner_email = current_user.strip().lower()
+    db_contact = Contact(owner_email=owner_email, **contact.model_dump())
     db.add(db_contact)
     db.commit()
     db.refresh(db_contact)
@@ -29,24 +34,47 @@ def create_contact(contact: ContactCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/", response_model=List[ContactResponse])
-def list_contacts(db: Session = Depends(get_db)):
+def list_contacts(
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user),
+):
     """Lista todos os contatos."""
-    return db.query(Contact).all()
+    owner_email = current_user.strip().lower()
+    return db.query(Contact).filter(Contact.owner_email == owner_email).all()
 
 
 @router.get("/{contact_id}", response_model=ContactResponse)
-def get_contact(contact_id: int, db: Session = Depends(get_db)):
+def get_contact(
+    contact_id: int,
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user),
+):
     """Busca um contato pelo ID."""
-    contact = db.query(Contact).filter(Contact.id == contact_id).first()
+    owner_email = current_user.strip().lower()
+    contact = (
+        db.query(Contact)
+        .filter(Contact.id == contact_id, Contact.owner_email == owner_email)
+        .first()
+    )
     if not contact:
         raise HTTPException(status_code=404, detail="Contato não encontrado")
     return contact
 
 
 @router.put("/{contact_id}", response_model=ContactResponse)
-def update_contact(contact_id: int, data: ContactCreate, db: Session = Depends(get_db)):
+def update_contact(
+    contact_id: int,
+    data: ContactCreate,
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user),
+):
     """Atualiza um contato."""
-    contact = db.query(Contact).filter(Contact.id == contact_id).first()
+    owner_email = current_user.strip().lower()
+    contact = (
+        db.query(Contact)
+        .filter(Contact.id == contact_id, Contact.owner_email == owner_email)
+        .first()
+    )
     if not contact:
         raise HTTPException(status_code=404, detail="Contato não encontrado")
     for key, value in data.model_dump().items():
@@ -57,11 +85,43 @@ def update_contact(contact_id: int, data: ContactCreate, db: Session = Depends(g
 
 
 @router.delete("/{contact_id}")
-def delete_contact(contact_id: int, db: Session = Depends(get_db)):
+def delete_contact(
+    contact_id: int,
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user),
+):
     """Remove um contato."""
-    contact = db.query(Contact).filter(Contact.id == contact_id).first()
+    owner_email = current_user.strip().lower()
+    contact = (
+        db.query(Contact)
+        .filter(Contact.id == contact_id, Contact.owner_email == owner_email)
+        .first()
+    )
     if not contact:
         raise HTTPException(status_code=404, detail="Contato não encontrado")
     db.delete(contact)
     db.commit()
     return {"message": "Contato removido com sucesso"}
+
+
+@router.post("/{contact_id}/pin", response_model=ContactResponse)
+def pin_contact(
+    contact_id: int,
+    payload: ContactPinRequest,
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user),
+):
+    """Fixa ou desafixa contato no topo da fila."""
+    owner_email = current_user.strip().lower()
+    contact = (
+        db.query(Contact)
+        .filter(Contact.id == contact_id, Contact.owner_email == owner_email)
+        .first()
+    )
+    if not contact:
+        raise HTTPException(status_code=404, detail="Contato não encontrado")
+
+    contact.pinned = bool(payload.pinned)
+    db.commit()
+    db.refresh(contact)
+    return contact

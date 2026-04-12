@@ -6,8 +6,11 @@ Imagens seguem para o ImgBB e outros arquivos ficam em /uploads.
 
 import base64
 import httpx
+import re
+import unicodedata
 from pathlib import Path
 from uuid import uuid4
+from urllib.parse import quote
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Request
 from core.config import settings
 from core.auth import get_current_user
@@ -19,7 +22,7 @@ router = APIRouter(
 )
 
 
-UPLOADS_DIR = Path("uploads")
+UPLOADS_DIR = Path(__file__).resolve().parents[1] / "uploads"
 UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 
 ALLOWED_EXTENSIONS = {
@@ -43,6 +46,27 @@ ALLOWED_EXTENSIONS = {
 
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".svg"}
 MAX_FILE_SIZE = 15 * 1024 * 1024  # 15 MB
+
+
+def _sanitize_filename(filename: str) -> str:
+    """Normaliza nome para armazenamento seguro sem perder legibilidade."""
+    base = Path(filename or "arquivo").name.strip()
+    if not base:
+        base = "arquivo"
+
+    normalized = unicodedata.normalize("NFKD", base)
+    ascii_name = normalized.encode("ascii", "ignore").decode("ascii")
+    safe = re.sub(r"\s+", "_", ascii_name)
+    safe = re.sub(r"[^A-Za-z0-9._-]", "", safe)
+    safe = safe.strip("._") or "arquivo"
+
+    # Evita nome enorme no filesystem.
+    if len(safe) > 120:
+        stem = Path(safe).stem[:100] or "arquivo"
+        suffix = Path(safe).suffix[:20]
+        safe = f"{stem}{suffix}"
+
+    return safe
 
 
 async def upload_to_imgbb(image_bytes: bytes) -> str:
@@ -76,8 +100,8 @@ async def upload_file(request: Request, file: UploadFile = File(...)):
     - Imagens: ImgBB (URL pública)
     - Outros tipos permitidos: armazenamento local em /uploads
     """
-    filename = (file.filename or "arquivo").strip()
-    extension = Path(filename).suffix.lower()
+    original_filename = (file.filename or "arquivo").strip()
+    extension = Path(original_filename).suffix.lower()
 
     if extension not in ALLOWED_EXTENSIONS:
         raise HTTPException(
@@ -100,18 +124,20 @@ async def upload_file(request: Request, file: UploadFile = File(...)):
         url = await upload_to_imgbb(file_bytes)
         return {
             "url": url,
-            "filename": filename,
+            "filename": original_filename,
             "kind": "image",
         }
 
-    generated_name = f"{uuid4().hex}{extension}"
+    safe_filename = _sanitize_filename(original_filename)
+    generated_name = f"{uuid4().hex[:8]}_{safe_filename}"
     saved_path = UPLOADS_DIR / generated_name
     saved_path.write_bytes(file_bytes)
 
-    url = f"{request.base_url}uploads/{generated_name}"
+    encoded_name = quote(generated_name)
+    url = f"{request.base_url}uploads/{encoded_name}"
     return {
         "url": url,
-        "filename": filename,
+        "filename": original_filename,
         "kind": "file",
     }
 

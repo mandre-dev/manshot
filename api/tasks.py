@@ -34,10 +34,12 @@ def dispatch_campaign(
     use_sms: bool,
     use_telegram: bool,
     image_url: str = None,
+    attachments: list = None,
     email_subject: str = None,
     sms_from: str = None,
     telegram_signature: str = None,
     interval_seconds: float = 0,
+    **kwargs,
 ):
     """
     Tarefa principal de disparo.
@@ -46,6 +48,29 @@ def dispatch_campaign(
     """
     from api.database import SessionLocal
     from api.models.campaign import Campaign, StatusEnum
+
+    def normalize_attachments() -> list[dict]:
+        normalized = []
+        extra_attachments = kwargs.get("attachments") or []
+
+        for item in extra_attachments:
+            if isinstance(item, dict) and item.get("url"):
+                normalized.append(item)
+            elif isinstance(item, str) and item:
+                normalized.append({"url": item})
+
+        for item in attachments or []:
+            if isinstance(item, dict) and item.get("url"):
+                normalized.append(item)
+            elif isinstance(item, str) and item:
+                normalized.append({"url": item})
+
+        if not normalized and image_url:
+            normalized.append({"url": image_url})
+
+        return normalized
+
+    campaign_attachments = normalize_attachments()
 
     db = SessionLocal()
     total = 0
@@ -64,7 +89,11 @@ def dispatch_campaign(
             if use_email and contact.get("email"):
                 core_contact = CoreContact(name=name, destination=contact["email"])
                 result = EmailChannel().send(
-                    core_contact, message, image_url=image_url, subject=email_subject
+                    core_contact,
+                    message,
+                    image_url=image_url,
+                    subject=email_subject,
+                    attachments=campaign_attachments,
                 )
                 total += 1
                 success += 1 if result.success else 0
@@ -97,6 +126,7 @@ def dispatch_campaign(
                     message,
                     image_url=image_url,
                     signature=telegram_signature,
+                    attachments=campaign_attachments,
                 )
                 total += 1
                 success += 1 if result.success else 0
