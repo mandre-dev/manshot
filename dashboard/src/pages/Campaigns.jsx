@@ -507,6 +507,32 @@ export default function Campaigns() {
       return
     }
 
+    const selectedCampaign = campaigns.find((campaign) => campaign.id === campaignToSend)
+    if (selectedCampaign?.use_telegram) {
+      const selectedContactList = contacts.filter((contact) => selectedContacts.has(contact.id))
+      const contactsWithoutTelegramId = selectedContactList.filter((contact) => !String(contact.telegram_id || '').trim())
+
+      if (
+        selectedCampaign.use_telegram
+        && !selectedCampaign.use_email
+        && !selectedCampaign.use_sms
+        && contactsWithoutTelegramId.length === selectedContactList.length
+      ) {
+        alert('Nenhum contato selecionado possui telegram_id para disparo via Telegram.')
+        return
+      }
+
+      const confirmTelegramActivation = window.confirm(
+        contactsWithoutTelegramId.length > 0
+          ? `Atencao: ${contactsWithoutTelegramId.length} contato(s) nao possuem telegram_id e podem nao receber via Telegram.\n\nLembrete: o usuario precisa abrir o bot e clicar em /start antes do disparo.\n\nDeseja continuar?`
+          : 'Lembrete Telegram: o usuario precisa abrir o bot e clicar em /start antes do disparo.\n\nDeseja continuar?'
+      )
+
+      if (!confirmTelegramActivation) {
+        return
+      }
+    }
+
     setShowSelectContacts(false)
     setSending(campaignToSend)
     setSendingModalStatus('loading')
@@ -609,16 +635,22 @@ export default function Campaigns() {
             )}
 
             {form.use_sms && (
-              <input
-                style={getAnimatedInputStyle('sms_from')}
-                placeholder="Remetente do SMS (opcional)"
-                value={form.sms_from}
-                onMouseEnter={() => setHoveredField('sms_from')}
-                onMouseLeave={() => setHoveredField('')}
-                onFocus={() => setFocusedField('sms_from')}
-                onBlur={() => setFocusedField('')}
-                onChange={e => setForm({ ...form, sms_from: e.target.value })}
-              />
+              <>
+                <input
+                  style={getAnimatedInputStyle('sms_from')}
+                  placeholder="Remetente do SMS (opcional)"
+                  value={form.sms_from}
+                  onMouseEnter={() => setHoveredField('sms_from')}
+                  onMouseLeave={() => setHoveredField('')}
+                  onFocus={() => setFocusedField('sms_from')}
+                  onBlur={() => setFocusedField('')}
+                  onChange={e => setForm({ ...form, sms_from: e.target.value })}
+                />
+                <div style={{ color: '#9ca3af', fontSize: '11px', marginTop: '-4px', lineHeight: '1.5', fontFamily: "'Space Mono', monospace" }}>
+                  Em conta Vonage demo/trial, o remetente do topo do SMS pode ser
+                  substituido pelo provedor (ex.: 30342 / FREE SMS DEMO).
+                </div>
+              </>
             )}
 
             {form.use_telegram && (
