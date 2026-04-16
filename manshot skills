@@ -1,0 +1,19 @@
+Admin
+
+email: admin@manshot.local
+senha: admin123
+
+source /home/mandre/manshot/.venv/bin/activate
+cd /home/mandre/manshot
+alembic upgrade head
+uvicorn api.main:app --reload
+
+source /home/mandre/manshot/.venv/bin/activate
+cd /home/mandre/manshot
+celery -A api.tasks.celery_app worker --loglevel=info
+
+--------------------------------------------
+
+Senha para marcossandre016gmail.com:
+
+pqnl tgqt uwvb cmak

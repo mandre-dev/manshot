@@ -177,6 +177,8 @@ export default function Credentials() {
   const [isEditingCredentials, setIsEditingCredentials] = useState(false)
   const [showEmailPassword, setShowEmailPassword] = useState(false)
   const [isEmailToggleHovered, setIsEmailToggleHovered] = useState(false)
+  const [telegramActivationLink, setTelegramActivationLink] = useState('')
+  const [telegramLinkStatus, setTelegramLinkStatus] = useState('')
   const formSectionRef = useRef(null)
   const [savedSummary, setSavedSummary] = useState({
     email_user: '',
@@ -250,7 +252,60 @@ export default function Credentials() {
 
   const onChange = (field) => (event) => {
     const value = event.target.value
+    if (field === 'telegram_bot_token') {
+      setTelegramActivationLink('')
+      setTelegramLinkStatus('')
+    }
     setForm((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const buildTelegramActivationLink = async () => {
+    const token = form.telegram_bot_token.trim()
+    if (!token) {
+      setTelegramLinkStatus('Informe o token do bot para gerar o link de ativacao.')
+      return
+    }
+
+    setTelegramLinkStatus('Gerando link de ativacao...')
+    try {
+      const controller = new AbortController()
+      const timeoutId = window.setTimeout(() => controller.abort(), 8000)
+
+      const res = await fetch(`https://api.telegram.org/bot${token}/getMe`, {
+        method: 'GET',
+        signal: controller.signal,
+      })
+      window.clearTimeout(timeoutId)
+
+      const data = await res.json()
+      const username = data?.result?.username
+      if (!data?.ok || !username) {
+        setTelegramActivationLink('')
+        setTelegramLinkStatus('Nao foi possivel validar o bot com esse token.')
+        return
+      }
+
+      const link = `https://t.me/${username}?start=manshot`
+      setTelegramActivationLink(link)
+      setTelegramLinkStatus('Link de ativacao pronto.')
+    } catch {
+      setTelegramActivationLink('')
+      setTelegramLinkStatus('Falha ao gerar link. Verifique o token e tente novamente.')
+    }
+  }
+
+  const copyTelegramActivationLink = async () => {
+    if (!telegramActivationLink) {
+      setTelegramLinkStatus('Gere o link antes de copiar.')
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(telegramActivationLink)
+      setTelegramLinkStatus('Link copiado para a area de transferencia.')
+    } catch {
+      setTelegramLinkStatus('Nao foi possivel copiar o link automaticamente.')
+    }
   }
 
   const onSave = async () => {
@@ -378,7 +433,7 @@ export default function Credentials() {
             </div>
           </div>
           <div style={{ marginTop: '14px' }}>
-            <AnimatedButton type="button" onClick={startEditingCredentials}>
+            <AnimatedButton type="button" onClick={startEditingCredentials} style={{ color: '#fff' }}>
               Editar credenciais
             </AnimatedButton>
           </div>
@@ -399,14 +454,11 @@ export default function Credentials() {
       ) : isEditingCredentials ? (
         <>
           <div ref={formSectionRef} style={{ ...cardStyle, marginBottom: '12px', boxShadow: '0 0 0 1px #FF6B0033' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '12px', flexWrap: 'wrap' }}>
+            <div style={{ marginBottom: '12px' }}>
             <div style={{ ...badgeStyle, marginBottom: '12px' }}>
               <Mail size={16} />
               Email SMTP
             </div>
-              <AnimatedButton type="button" onClick={cancelEditingCredentials} style={{ background: '#1a1208', color: '#FFB066' }}>
-                Cancelar edição
-              </AnimatedButton>
             </div>
             <div style={gridTwoColumns}>
               <Field label="Email remetente">
@@ -491,6 +543,11 @@ export default function Credentials() {
                 <InteractiveInput value={form.sms_default_from} onChange={onChange('sms_default_from')} placeholder="JOAOEMPRESA ou 5511999999999" />
               </Field>
             </div>
+            <div style={hintStyle}>
+              O Manshot envia este remetente para o Vonage, mas em conta demo/trial o
+              provedor pode sobrescrever o identificador mostrado no topo do SMS
+              (ex.: codigo curto como 30342 e texto FREE SMS DEMO).
+            </div>
           </div>
 
           <div style={{ ...cardStyle, marginBottom: '12px' }}>
@@ -502,6 +559,28 @@ export default function Credentials() {
             <Field label="Token do bot Telegram">
               <InteractiveInput value={form.telegram_bot_token} onChange={onChange('telegram_bot_token')} placeholder="Digite para atualizar" type="password" />
             </Field>
+            <div style={hintStyle}>
+              O contato precisa abrir seu bot no Telegram e clicar em /start antes de
+              receber mensagens.
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginTop: '8px' }}>
+              <AnimatedButton type="button" onClick={buildTelegramActivationLink} style={{ background: '#1a1208', color: '#FFB066' }}>
+                Gerar link de ativacao
+              </AnimatedButton>
+              <AnimatedButton type="button" onClick={copyTelegramActivationLink} disabled={!telegramActivationLink} style={{ background: '#1a1208', color: '#FFB066' }}>
+                Copiar link
+              </AnimatedButton>
+              {telegramActivationLink ? (
+                <a href={telegramActivationLink} target="_blank" rel="noreferrer" style={{ color: '#FFB066', fontSize: '12px', textDecoration: 'underline' }}>
+                  Abrir link
+                </a>
+              ) : null}
+            </div>
+            {telegramLinkStatus ? (
+              <div style={{ color: telegramLinkStatus.toLowerCase().includes('pronto') || telegramLinkStatus.toLowerCase().includes('copiado') ? '#34d399' : '#fca5a5', fontSize: '12px', marginTop: '8px' }}>
+                {telegramLinkStatus}
+              </div>
+            ) : null}
           </div>
 
           <div style={{ ...cardStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
@@ -510,19 +589,30 @@ export default function Credentials() {
                 ? 'Se preenchido, esses dados definem o remetente dos seus disparos.'
                 : 'Preencha pelo menos um canal para usar remetente proprio por usuario.'}
             </div>
-            <AnimatedButton
-              type="button"
-              onClick={onSave}
-              disabled={saving}
-            >
-              {saving ? 'Salvando...' : 'Salvar credenciais'}
-            </AnimatedButton>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+              <AnimatedButton
+                type="button"
+                onClick={onSave}
+                disabled={saving}
+                style={{ color: '#fff' }}
+              >
+                {saving ? 'Salvando...' : 'Salvar credenciais'}
+              </AnimatedButton>
+              <AnimatedButton
+                type="button"
+                onClick={cancelEditingCredentials}
+                disabled={saving}
+                style={{ background: '#1a1208', color: '#FFB066' }}
+              >
+                Cancelar edição
+              </AnimatedButton>
+            </div>
           </div>
         </>
       ) : (
         <div style={{ ...cardStyle, marginBottom: '12px' }}>
           <div style={{ color: '#e5e7eb', fontSize: '14px', lineHeight: '1.6' }}>
-            As credenciais ficam salvas neste usuario. Clique em <span style={{ color: '#FFB066' }}>Editar credenciais</span> para alterar email, senha e remetentes.
+            As credenciais ficam salvas neste usuario. Clique em <span style={{ color: '#FFB066' }}>Editar credenciais</span> para alterar o remetente do Email, SMS e Telegram.
           </div>
         </div>
       )}

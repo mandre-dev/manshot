@@ -121,6 +121,26 @@ class TelegramChannel(BaseChannel):
 
         return normalized
 
+    @staticmethod
+    def _friendly_telegram_error(raw_error: str) -> str:
+        message = (raw_error or "").strip()
+        lowered = message.lower()
+
+        if (
+            "bot can't initiate conversation" in lowered
+            or "chat not found" in lowered
+            or "bot was blocked by the user" in lowered
+        ):
+            return (
+                "Contato sem ativacao no Telegram. "
+                "Peca para o usuario abrir o bot e clicar em /start antes do disparo."
+            )
+
+        if "user is deactivated" in lowered:
+            return "Conta Telegram desativada para este contato."
+
+        return message
+
     def send(
         self,
         contact: Contact,
@@ -212,7 +232,11 @@ class TelegramChannel(BaseChannel):
 
             data = response.json()
             success = data.get("ok", False)
-            error = data.get("description", "") if not success else ""
+            error = (
+                self._friendly_telegram_error(data.get("description", ""))
+                if not success
+                else ""
+            )
 
             return DispatchResult(contact=contact, success=success, error=error)
 
