@@ -11,7 +11,6 @@ from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
 
-
 # revision identifiers, used by Alembic.
 revision: str = "b1c2d3e4f5a6"
 down_revision: Union[str, Sequence[str], None] = "9d1f8f2b2e11"
@@ -21,9 +20,22 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
-    op.add_column("contacts", sa.Column("pinned", sa.Boolean(), nullable=True, server_default=sa.false()))
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    existing_columns = {column["name"] for column in inspector.get_columns("contacts")}
+
+    if "pinned" not in existing_columns:
+        op.add_column(
+            "contacts",
+            sa.Column("pinned", sa.Boolean(), nullable=True, server_default=sa.false()),
+        )
 
 
 def downgrade() -> None:
     """Downgrade schema."""
-    op.drop_column("contacts", "pinned")
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    existing_columns = {column["name"] for column in inspector.get_columns("contacts")}
+
+    if "pinned" in existing_columns:
+        op.drop_column("contacts", "pinned")

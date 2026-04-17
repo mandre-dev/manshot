@@ -661,7 +661,7 @@ export default function Navbar() {
                 boxShadow: '0 20px 60px rgba(0,0,0,0.85)',
                 animation: 'slideInModal 0.2s ease',
               }}>
-                <div style={{ color: '#e5e7eb', fontSize: '18px', marginBottom: '20px', fontFamily: "'Fira Code', monospace", fontWeight: '700', letterSpacing: '0.04em' }}>Editar perfil</div>
+                <div style={{ color: '#e5e7eb', fontSize: '18px', marginBottom: '20px', fontFamily: "'Fira Code', monospace", fontWeight: '700', letterSpacing: '0.04em' }}>Editar Perfil</div>
 
                 <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
                   <div style={{ position: 'relative' }}>
@@ -669,8 +669,9 @@ export default function Navbar() {
                       width: '148px',
                       height: '148px',
                       borderRadius: '50%',
-                      background: '#ffffff',
-                      color: '#fff',
+                      background: profileAvatarDraft ? '#ffffff' : '#FF6B00',
+                      color: profileAvatarDraft ? '#fff' : '#ffffff',
+                      border: profileAvatarDraft ? 'none' : '1px solid #ffb37d',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -731,7 +732,7 @@ export default function Navbar() {
                     borderRadius: '10px',
                     padding: '10px 14px',
                   }}>
-                    <label style={{ display: 'block', color: '#d1d5db', fontSize: '13px', marginBottom: '6px', fontFamily: "'Fira Code', monospace", fontWeight: '700', letterSpacing: '0.03em' }}>Nome de exibicao</label>
+                    <label style={{ display: 'block', color: '#d1d5db', fontSize: '13px', marginBottom: '6px', fontFamily: "'Fira Code', monospace", fontWeight: '700', letterSpacing: '0.03em' }}>Nome de exibição:</label>
                     <input
                       value={profileNameDraft}
                       onChange={(event) => setProfileNameDraft(event.target.value)}
@@ -763,15 +764,11 @@ export default function Navbar() {
                     borderRadius: '10px',
                     padding: '10px 14px',
                   }}>
-                    <label style={{ display: 'block', color: '#d1d5db', fontSize: '13px', marginBottom: '6px', fontFamily: "'Fira Code', monospace", fontWeight: '700', letterSpacing: '0.03em' }}>Nome de usuario</label>
+                    <label style={{ display: 'block', color: '#d1d5db', fontSize: '13px', marginBottom: '6px', fontFamily: "'Fira Code', monospace", fontWeight: '700', letterSpacing: '0.03em' }}>Nome de usuário:</label>
                     <div style={{ color: '#f3f4f6', fontSize: '30px', fontFamily: "'Fira Code', monospace" }}>
                       {String(accountEmail || '').split('@')[0] || 'usuario'}
                     </div>
                   </div>
-                </div>
-
-                <div style={{ color: '#9ca3af', fontSize: '13px', marginTop: '12px', lineHeight: '1.5', textAlign: 'center' }}>
-                  Seu perfil ajuda as pessoas a reconhecerem voce. Seu nome e foto tambem sao usados no aplicativo.
                 </div>
 
                 {profileStatus ? (
@@ -967,7 +964,7 @@ export default function Navbar() {
                           width: '28px',
                           height: '28px',
                           borderRadius: '50%',
-                          background: '#FF6B00',
+                            background: profileAvatarDraft ? '#FF6B00' : '#FF6B00',
                           color: '#fff',
                           display: 'flex',
                           alignItems: 'center',
@@ -1456,19 +1453,19 @@ export default function Navbar() {
                   marginBottom: '14px',
                 }}>
                   <p style={{ color: '#d1d5db', fontSize: '13px', lineHeight: '1.55', marginBottom: '10px' }}>
-                    1. Privacidade: seus dados de contatos e campanhas sao tratados para operacao da conta e nao devem ser compartilhados sem autorizacao.
+                    <strong style={{ color: '#FF6B00' }}>1. Privacidade:</strong> seus dados de contatos e campanhas sao tratados para operacao da conta e nao devem ser compartilhados sem autorizacao.
                   </p>
                   <p style={{ color: '#d1d5db', fontSize: '13px', lineHeight: '1.55', marginBottom: '10px' }}>
-                    2. Boas praticas: e proibido o uso para spam, fraude, conteudo abusivo ou qualquer acao que viole leis locais.
+                    <strong style={{ color: '#FF6B00' }}>2. Boas praticas:</strong> e proibido o uso para spam, fraude, conteudo abusivo ou qualquer acao que viole leis locais.
                   </p>
                   <p style={{ color: '#d1d5db', fontSize: '13px', lineHeight: '1.55', marginBottom: '10px' }}>
-                    3. Responsabilidade: cada usuario e responsavel pelas mensagens enviadas e pelo consentimento dos destinatarios.
+                    <strong style={{ color: '#FF6B00' }}>3. Responsabilidade:</strong> cada usuario e responsavel pelas mensagens enviadas e pelo consentimento dos destinatarios.
                   </p>
                   <p style={{ color: '#d1d5db', fontSize: '13px', lineHeight: '1.55', marginBottom: '10px' }}>
-                    4. Seguranca da conta: mantenha credenciais em sigilo e reporte acessos suspeitos imediatamente.
+                    <strong style={{ color: '#FF6B00' }}>4. Seguranca da conta:</strong> mantenha credenciais em sigilo e reporte acessos suspeitos imediatamente.
                   </p>
                   <p style={{ color: '#d1d5db', fontSize: '13px', lineHeight: '1.55', marginBottom: 0 }}>
-                    5. Atualizacoes: estes termos podem ser ajustados para melhorias do servico e conformidade legal.
+                    <strong style={{ color: '#FF6B00' }}>5. Atualizações:</strong> estes termos podem ser ajustados para melhorias do servico e conformidade legal.
                   </p>
                 </div>
 
