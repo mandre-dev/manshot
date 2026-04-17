@@ -29,8 +29,10 @@ class TelegramChannel(BaseChannel):
     O campo 'destination' do Contact deve ser o chat_id do usuário.
     """
 
-    def __init__(self):
-        self.base_url = f"https://api.telegram.org/bot{settings.TELEGRAM_BOT_TOKEN}"
+    @staticmethod
+    def _build_base_url(bot_token: str | None = None) -> str:
+        token = (bot_token or settings.TELEGRAM_BOT_TOKEN or "").strip()
+        return f"https://api.telegram.org/bot{token}"
 
     @staticmethod
     def _is_image_attachment(attachment_url: str) -> bool:
@@ -119,6 +121,26 @@ class TelegramChannel(BaseChannel):
 
         return normalized
 
+    @staticmethod
+    def _friendly_telegram_error(raw_error: str) -> str:
+        message = (raw_error or "").strip()
+        lowered = message.lower()
+
+        if (
+            "bot can't initiate conversation" in lowered
+            or "chat not found" in lowered
+            or "bot was blocked by the user" in lowered
+        ):
+            return (
+                "Contato sem ativacao no Telegram. "
+                "Peca para o usuario abrir o bot e clicar em /start antes do disparo."
+            )
+
+        if "user is deactivated" in lowered:
+            return "Conta Telegram desativada para este contato."
+
+        return message
+
     def send(
         self,
         contact: Contact,
@@ -126,6 +148,7 @@ class TelegramChannel(BaseChannel):
         image_url: str = None,
         signature: str = None,
         attachments: list | None = None,
+        bot_token: str | None = None,
     ) -> DispatchResult:
         """
         Envia mensagem para um contato via Telegram.
@@ -134,6 +157,17 @@ class TelegramChannel(BaseChannel):
         A mensagem suporta variáveis: use {name} para personalizar.
         """
         try:
+            resolved_bot_token = (
+                bot_token or settings.TELEGRAM_BOT_TOKEN or ""
+            ).strip()
+            if not resolved_bot_token:
+                return DispatchResult(
+                    contact=contact,
+                    success=False,
+                    error="Token do bot Telegram não configurado para este usuário.",
+                )
+
+            base_url = self._build_base_url(resolved_bot_token)
             telegram_html = self._editor_html_to_telegram_html(message)
             personalized_message = telegram_html.format(name=contact.name)
             attachment_items = self._normalize_attachment_items(attachments, image_url)
@@ -164,7 +198,7 @@ class TelegramChannel(BaseChannel):
 
                     if kind == "image":
                         response = httpx.post(
-                            f"{self.base_url}/sendPhoto",
+                            f"{base_url}/sendPhoto",
                             data={
                                 "chat_id": contact.destination,
                                 "caption": caption,
@@ -175,7 +209,7 @@ class TelegramChannel(BaseChannel):
                         )
                     else:
                         response = httpx.post(
-                            f"{self.base_url}/sendDocument",
+                            f"{base_url}/sendDocument",
                             data={
                                 "chat_id": contact.destination,
                                 "caption": caption,
@@ -187,7 +221,7 @@ class TelegramChannel(BaseChannel):
             else:
                 # Envia só texto
                 response = httpx.post(
-                    f"{self.base_url}/sendMessage",
+                    f"{base_url}/sendMessage",
                     json={
                         "chat_id": contact.destination,
                         "text": personalized_message,
@@ -198,7 +232,11 @@ class TelegramChannel(BaseChannel):
 
             data = response.json()
             success = data.get("ok", False)
-            error = data.get("description", "") if not success else ""
+            error = (
+                self._friendly_telegram_error(data.get("description", ""))
+                if not success
+                else ""
+            )
 
             return DispatchResult(contact=contact, success=success, error=error)
 

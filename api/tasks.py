@@ -28,6 +28,7 @@ celery_app.conf.update(
 def dispatch_campaign(
     self,
     campaign_id: int,
+    owner_email: str,
     contacts: list,
     message: str,
     use_email: bool,
@@ -48,6 +49,7 @@ def dispatch_campaign(
     """
     from api.database import SessionLocal
     from api.models.campaign import Campaign, StatusEnum
+    from api.models.user import User
 
     def normalize_attachments() -> list[dict]:
         normalized = []
@@ -78,6 +80,45 @@ def dispatch_campaign(
     failed = 0
 
     try:
+        sender_user = None
+        normalized_owner_email = (owner_email or "").strip().lower()
+        is_admin_owner = normalized_owner_email == settings.ADMIN_EMAIL.lower()
+        if normalized_owner_email and not is_admin_owner:
+            sender_user = (
+                db.query(User).filter(User.email == normalized_owner_email).first()
+            )
+
+        sender_email_smtp_host = (
+            sender_user.sender_email_smtp_host if sender_user else None
+        )
+        sender_email_smtp_port = (
+            sender_user.sender_email_smtp_port if sender_user else None
+        )
+        sender_email_user = sender_user.sender_email_user if sender_user else None
+        sender_email_password = (
+            sender_user.sender_email_password if sender_user else None
+        )
+        sender_email_from_name = (
+            sender_user.sender_email_from_name if sender_user else None
+        )
+        sender_sms_vonage_key = (
+            sender_user.sender_sms_vonage_key if sender_user else None
+        )
+        sender_sms_vonage_secret = (
+            sender_user.sender_sms_vonage_secret if sender_user else None
+        )
+        sender_sms_default_from = (
+            sender_user.sender_sms_default_from if sender_user else None
+        )
+        sender_telegram_bot_token = (
+            sender_user.sender_telegram_bot_token if sender_user else None
+        )
+
+        can_send_user_email = is_admin_owner or (
+            bool((sender_email_user or "").strip())
+            and bool((sender_email_password or "").strip())
+        )
+
         for contact in contacts:
             # Aguarda o intervalo configurado antes de processar cada contato.
             if interval_seconds > 0:
@@ -87,6 +128,14 @@ def dispatch_campaign(
 
             # Disparo via Email
             if use_email and contact.get("email"):
+                if not can_send_user_email:
+                    total += 1
+                    failed += 1
+                    print(
+                        f"[EMAIL][campaign={campaign_id}] owner='{normalized_owner_email}' sem email/senha de remetente configurados."
+                    )
+                    continue
+
                 core_contact = CoreContact(name=name, destination=contact["email"])
                 result = EmailChannel().send(
                     core_contact,
@@ -94,10 +143,19 @@ def dispatch_campaign(
                     image_url=image_url,
                     subject=email_subject,
                     attachments=campaign_attachments,
+                    smtp_host=sender_email_smtp_host,
+                    smtp_port=sender_email_smtp_port,
+                    smtp_user=sender_email_user,
+                    smtp_password=sender_email_password,
+                    from_display_name=sender_email_from_name,
                 )
                 total += 1
                 success += 1 if result.success else 0
                 failed += 1 if not result.success else 0
+                if not result.success:
+                    print(
+                        f"[EMAIL][campaign={campaign_id}] owner='{normalized_owner_email}' sender='{sender_email_user or ''}' host='{sender_email_smtp_host or ''}' port='{sender_email_smtp_port or ''}' destino='{contact['email']}' erro='{result.error}'"
+                    )
 
             # Disparo via SMS
             if use_sms and contact.get("phone"):
@@ -106,7 +164,9 @@ def dispatch_campaign(
                     core_contact,
                     message,
                     image_url=image_url,
-                    sms_from=sms_from,
+                    sms_from=sms_from or sender_sms_default_from,
+                    vonage_key=sender_sms_vonage_key,
+                    vonage_secret=sender_sms_vonage_secret,
                 )
                 total += 1
                 success += 1 if result.success else 0
@@ -127,6 +187,7 @@ def dispatch_campaign(
                     image_url=image_url,
                     signature=telegram_signature,
                     attachments=campaign_attachments,
+                    bot_token=sender_telegram_bot_token,
                 )
                 total += 1
                 success += 1 if result.success else 0

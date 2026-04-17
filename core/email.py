@@ -6,6 +6,7 @@ Suporta personalização de mensagem, imagem inline e anexos de arquivo.
 
 import mimetypes
 import smtplib
+from smtplib import SMTPAuthenticationError
 from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
@@ -32,10 +33,27 @@ class EmailChannel(BaseChannel):
     Requer uma conta Gmail com App Password habilitado.
     """
 
-    def _get_connection(self) -> smtplib.SMTP_SSL:
-        """Cria e retorna uma conexão autenticada com o Gmail SMTP."""
-        conn = smtplib.SMTP_SSL("smtp.gmail.com", 465)
-        conn.login(settings.GMAIL_USER, settings.GMAIL_APP_PASSWORD)
+    def _get_connection(
+        self,
+        smtp_host: str | None = None,
+        smtp_port: int | None = None,
+        smtp_user: str | None = None,
+        smtp_password: str | None = None,
+    ):
+        """Conexão SMTP (SSL na porta 465 ou STARTTLS na 587)."""
+        host = (smtp_host or "smtp.gmail.com").strip()
+        port = int(smtp_port or 465)
+        user = (smtp_user or settings.GMAIL_USER or "").strip()
+        password = smtp_password or settings.GMAIL_APP_PASSWORD or ""
+
+        if port == 587:
+            conn = smtplib.SMTP(host, port, timeout=30)
+            conn.starttls()
+            conn.login(user, password)
+            return conn
+
+        conn = smtplib.SMTP_SSL(host, port, timeout=30)
+        conn.login(user, password)
         return conn
 
     def _is_html(self, text: str) -> bool:
@@ -129,6 +147,11 @@ class EmailChannel(BaseChannel):
         image_url: str = None,
         subject: str = None,
         attachments: list | None = None,
+        smtp_host: str | None = None,
+        smtp_port: int | None = None,
+        smtp_user: str | None = None,
+        smtp_password: str | None = None,
+        from_display_name: str | None = None,
     ) -> DispatchResult:
         """
         Envia email para um contato via Gmail SMTP.
@@ -138,6 +161,14 @@ class EmailChannel(BaseChannel):
         A mensagem suporta variáveis: use {name} para personalizar.
         """
         try:
+            effective_smtp_user = (smtp_user or settings.GMAIL_USER or "").strip()
+            effective_from_name = (
+                from_display_name
+                or effective_smtp_user
+                or settings.EMAIL_FROM_NAME
+                or ""
+            ).strip() or "Manshot"
+
             personalized_message = message.format(name=contact.name)
             attachment_items = self._normalize_attachment_items(attachments, image_url)
             resolved_items = []
@@ -160,8 +191,8 @@ class EmailChannel(BaseChannel):
             is_image = bool(resolved_items) and resolved_items[0]["kind"] == "image"
 
             msg = MIMEMultipart("mixed")
-            msg["Subject"] = subject or f"Mensagem de {settings.EMAIL_FROM_NAME}"
-            msg["From"] = f"{settings.EMAIL_FROM_NAME} <{settings.GMAIL_USER}>"
+            msg["Subject"] = subject or f"Mensagem de {effective_from_name}"
+            msg["From"] = f"{effective_from_name} <{effective_smtp_user}>"
             msg["To"] = contact.destination
 
             body = MIMEMultipart("related")
@@ -227,10 +258,25 @@ class EmailChannel(BaseChannel):
                 )
                 msg.attach(attachment_part)
 
-            with self._get_connection() as conn:
-                conn.sendmail(settings.GMAIL_USER, contact.destination, msg.as_string())
+            with self._get_connection(
+                smtp_host=smtp_host,
+                smtp_port=smtp_port,
+                smtp_user=smtp_user,
+                smtp_password=smtp_password,
+            ) as conn:
+                conn.sendmail(effective_smtp_user, contact.destination, msg.as_string())
 
             return DispatchResult(contact=contact, success=True)
 
+        except SMTPAuthenticationError as e:
+            return DispatchResult(
+                contact=contact,
+                success=False,
+                error=(
+                    "Falha na autenticacao SMTP. Verifique se o email e a senha salvos "
+                    "sao da conta que vai enviar e se a senha e uma app password do Gmail. "
+                    f"Detalhe: {e}"
+                ),
+            )
         except Exception as e:
             return DispatchResult(contact=contact, success=False, error=str(e))

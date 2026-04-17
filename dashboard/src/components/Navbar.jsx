@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Plus, User, LogOut, FileText } from 'lucide-react'
+import { Plus, User, Users, LogOut, FileText, Fingerprint, Camera } from 'lucide-react'
 import { useGoogleLogin } from '@react-oauth/google'
 import logo from '../assets/logo-manshot.png'
 import { activateStoredAccountSession, clearToken, deriveAccountDisplayName, getMe, getStoredAccounts, googleLogin, inferAccountProviderByEmail, rememberAccount, removeStoredAccount, saveToken, setAuthProvider } from '../services/api'
@@ -12,18 +12,79 @@ const links = [
   { path: '/', icon: '⚡', label: 'Dashboard' },
   { path: '/contacts', icon: '👥', label: 'Contatos' },
   { path: '/campaigns', icon: '📡', label: 'Campanhas' },
+  { path: '/credentials', icon: Fingerprint, label: 'Credenciais', iconKind: 'component' },
 ]
+
+const PROFILE_PREFS_KEY = 'manshot_profile_prefs'
+
+function readProfilePrefs() {
+  if (typeof window === 'undefined') return {}
+
+  try {
+    const raw = localStorage.getItem(PROFILE_PREFS_KEY)
+    const parsed = raw ? JSON.parse(raw) : {}
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
+function getProfileForEmail(email) {
+  const normalizedEmail = (email || '').trim().toLowerCase()
+  if (!normalizedEmail) return { displayName: '', avatarDataUrl: '' }
+
+  const profile = readProfilePrefs()[normalizedEmail]
+  return {
+    displayName: (profile?.displayName || '').trim(),
+    avatarDataUrl: (profile?.avatarDataUrl || '').trim(),
+  }
+}
+
+function saveProfileForEmail(email, payload) {
+  const normalizedEmail = (email || '').trim().toLowerCase()
+  if (!normalizedEmail || typeof window === 'undefined') return
+
+  const current = readProfilePrefs()
+  current[normalizedEmail] = {
+    displayName: (payload?.displayName || '').trim(),
+    avatarDataUrl: (payload?.avatarDataUrl || '').trim(),
+  }
+  localStorage.setItem(PROFILE_PREFS_KEY, JSON.stringify(current))
+}
+
+function computeAvatarInitials(name) {
+  return (name || '')
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word?.[0])
+    .join('')
+    .toUpperCase() || 'MA'
+}
 
 export default function Navbar() {
   const location = useLocation()
   const navigate = useNavigate()
   const menuRef = useRef(null)
+  const profilePhotoInputRef = useRef(null)
   const [accountEmail, setAccountEmail] = useState('Carregando conta...')
   const [accountName, setAccountName] = useState('Conta conectada')
+  const [accountAvatarDataUrl, setAccountAvatarDataUrl] = useState('')
   const [recentAccounts, setRecentAccounts] = useState([])
   const [isAccountHovered, setIsAccountHovered] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isTermsOpen, setIsTermsOpen] = useState(false)
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const [profileNameDraft, setProfileNameDraft] = useState('')
+  const [profileAvatarDraft, setProfileAvatarDraft] = useState('')
+  const [profileStatus, setProfileStatus] = useState('')
+  const [isProfileNameHovered, setIsProfileNameHovered] = useState(false)
+  const [isProfileNameFocused, setIsProfileNameFocused] = useState(false)
+  const [isProfilePhotoHovered, setIsProfilePhotoHovered] = useState(false)
+  const [isProfileCancelHovered, setIsProfileCancelHovered] = useState(false)
+  const [isProfileCancelPressed, setIsProfileCancelPressed] = useState(false)
+  const [isProfileSaveHovered, setIsProfileSaveHovered] = useState(false)
+  const [isProfileSavePressed, setIsProfileSavePressed] = useState(false)
   const [isConfirmLogoutOpen, setIsConfirmLogoutOpen] = useState(false)
   const [isLogoutBtnHovered, setIsLogoutBtnHovered] = useState(false)
   const [isLogoutBtnPressed, setIsLogoutBtnPressed] = useState(false)
@@ -48,11 +109,14 @@ export default function Navbar() {
       .then((res) => {
         if (!mounted) return
         const email = res?.data?.email
-        const displayName = deriveAccountDisplayName(email)
+        const derivedName = deriveAccountDisplayName(email)
+        const profile = getProfileForEmail(email)
+        const displayName = profile.displayName || derivedName
         const knownAccount = getStoredAccounts().find((account) => account.email === email)
         const provider = knownAccount?.provider || inferAccountProviderByEmail(email)
         setAccountEmail(email || 'Conta conectada')
         setAccountName(displayName)
+        setAccountAvatarDataUrl(profile.avatarDataUrl || '')
         if (email) {
           setRecentAccounts(rememberAccount({ email, name: displayName, provider }))
         }
@@ -94,6 +158,62 @@ export default function Navbar() {
   const handleTermsClick = () => {
     setIsTermsOpen(true)
     setIsMenuOpen(false)
+  }
+
+  const handleProfileClick = () => {
+    setProfileNameDraft(accountName)
+    setProfileAvatarDraft(accountAvatarDataUrl)
+    setProfileStatus('')
+    setIsProfileOpen(true)
+    setIsMenuOpen(false)
+  }
+
+  const closeProfile = () => {
+    setIsProfileOpen(false)
+    setProfileStatus('')
+  }
+
+  const onSelectProfilePhoto = (event) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      setProfileStatus('Selecione um arquivo de imagem para a foto de perfil.')
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      const value = String(reader.result || '')
+      setProfileAvatarDraft(value)
+      setProfileStatus('')
+    }
+    reader.readAsDataURL(file)
+    event.target.value = ''
+  }
+
+  const saveProfile = () => {
+    const nextName = (profileNameDraft || '').trim()
+    if (!nextName) {
+      setProfileStatus('Informe um nome de exibicao para salvar o perfil.')
+      return
+    }
+
+    const normalizedEmail = (accountEmail || '').trim().toLowerCase()
+    saveProfileForEmail(normalizedEmail, {
+      displayName: nextName,
+      avatarDataUrl: profileAvatarDraft,
+    })
+
+    setAccountName(nextName)
+    setAccountAvatarDataUrl(profileAvatarDraft)
+    setRecentAccounts((prev) => prev.map((item) => (
+      item.email === normalizedEmail
+        ? { ...item, name: nextName }
+        : item
+    )))
+    rememberAccount({ email: normalizedEmail, name: nextName })
+    closeProfile()
   }
 
   const confirmLogout = () => {
@@ -146,10 +266,12 @@ export default function Navbar() {
       try {
         const me = await getMe()
         const activeEmail = me?.data?.email || account?.email || 'Conta conectada'
-        const displayName = deriveAccountDisplayName(activeEmail)
+        const profile = getProfileForEmail(activeEmail)
+        const displayName = profile.displayName || deriveAccountDisplayName(activeEmail)
         const provider = account?.provider || inferAccountProviderByEmail(activeEmail)
         setAccountEmail(activeEmail)
         setAccountName(displayName)
+        setAccountAvatarDataUrl(profile.avatarDataUrl || '')
         setRecentAccounts(rememberAccount({ email: activeEmail, name: displayName, provider }))
         setIsMenuOpen(false)
         startAccountSwitchTransition(displayName)
@@ -204,9 +326,11 @@ export default function Navbar() {
         setAuthProvider('google')
         const me = await getMe()
         const email = me?.data?.email || 'Conta conectada'
-        const displayName = deriveAccountDisplayName(email)
+        const profile = getProfileForEmail(email)
+        const displayName = profile.displayName || deriveAccountDisplayName(email)
         setAccountEmail(email)
         setAccountName(displayName)
+        setAccountAvatarDataUrl(profile.avatarDataUrl || '')
         setRecentAccounts(rememberAccount({ email, name: displayName, provider: 'google', token: res.data.access_token }))
         setIsMenuOpen(false)
         startAccountSwitchTransition(displayName)
@@ -282,7 +406,11 @@ export default function Navbar() {
               }
             }}
           >
-            <span style={{ fontSize: '16px' }}>{link.icon}</span>
+            {link.iconKind === 'component' ? (
+              <link.icon size={16} strokeWidth={2.2} />
+            ) : (
+              <span style={{ fontSize: '16px' }}>{link.icon}</span>
+            )}
             <span>{link.label}</span>
           </Link>
         )
@@ -322,8 +450,13 @@ export default function Navbar() {
           fontSize: '10px',
           fontWeight: '700',
           flexShrink: 0,
+          overflow: 'hidden',
         }}>
-          {accountName.split(' ').slice(0, 2).map(word => word?.[0]).join('').toUpperCase() || 'MA'}
+          {accountAvatarDataUrl ? (
+            <img src={accountAvatarDataUrl} alt="Foto do perfil" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ) : (
+            computeAvatarInitials(accountName)
+          )}
         </div>
         <div style={{ minWidth: 0 }}>
           <div
@@ -369,7 +502,7 @@ export default function Navbar() {
               }
             `}</style>
             <button
-              onClick={openAddAccountModal}
+              onClick={handleProfileClick}
               style={{
                 width: '100%',
                 padding: '12px 14px',
@@ -394,6 +527,34 @@ export default function Navbar() {
               }}
             >
               <User size={20} strokeWidth={1.8} />
+              <span>Perfil</span>
+            </button>
+            <button
+              onClick={openAddAccountModal}
+              style={{
+                width: '100%',
+                padding: '12px 14px',
+                background: 'transparent',
+                border: 'none',
+                borderBottom: '1px solid #2a1a0a',
+                color: '#f3f4f6',
+                fontSize: '15px',
+                fontWeight: '400',
+                textAlign: 'left',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = '#1a2233'
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = 'transparent'
+              }}
+            >
+              <Users size={20} strokeWidth={1.8} />
               <span>Contas logadas</span>
             </button>
             <button
@@ -462,6 +623,222 @@ export default function Navbar() {
 
       {typeof document !== 'undefined' && createPortal(
         <>
+          {/* Profile Modal */}
+          {isProfileOpen && (
+            <div style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(4,8,16,0.96)',
+              backdropFilter: 'blur(12px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 2147483647,
+              animation: 'fadeInOverlay 0.2s ease',
+            }}>
+              <style>{`
+                @keyframes fadeInOverlay {
+                  from { opacity: 0; }
+                  to { opacity: 1; }
+                }
+                @keyframes slideInModal {
+                  from {
+                    opacity: 0;
+                    transform: scale(0.95) translateY(6px);
+                  }
+                  to {
+                    opacity: 1;
+                    transform: scale(1) translateY(0);
+                  }
+                }
+              `}</style>
+              <div style={{
+                background: '#1d1f24',
+                border: '1px solid #2a1a0a',
+                borderRadius: '18px',
+                padding: '24px',
+                width: 'min(92vw, 560px)',
+                boxShadow: '0 20px 60px rgba(0,0,0,0.85)',
+                animation: 'slideInModal 0.2s ease',
+              }}>
+                <div style={{ color: '#e5e7eb', fontSize: '18px', marginBottom: '20px', fontFamily: "'Fira Code', monospace", fontWeight: '700', letterSpacing: '0.04em' }}>Editar perfil</div>
+
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+                  <div style={{ position: 'relative' }}>
+                    <div style={{
+                      width: '148px',
+                      height: '148px',
+                      borderRadius: '50%',
+                      background: '#ffffff',
+                      color: '#fff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '44px',
+                      boxShadow: isProfilePhotoHovered ? '0 0 0 3px rgba(255,107,0,0.22), 0 12px 30px rgba(255,107,0,0.14)' : 'none',
+                      transform: isProfilePhotoHovered ? 'translateY(-1px) scale(1.01)' : 'translateY(0) scale(1)',
+                      transition: 'transform 0.16s ease, box-shadow 0.16s ease',
+                      overflow: 'hidden',
+                    }}>
+                      {profileAvatarDraft ? (
+                        <img src={profileAvatarDraft} alt="Foto de perfil" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        computeAvatarInitials(profileNameDraft || accountName)
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => profilePhotoInputRef.current?.click()}
+                      style={{
+                        position: 'absolute',
+                        right: '4px',
+                        bottom: '6px',
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '50%',
+                        border: '1px solid #4b5563',
+                        background: isProfilePhotoHovered ? '#FF6B00' : '#1f232d',
+                        color: isProfilePhotoHovered ? '#fff' : '#f3f4f6',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        boxShadow: isProfilePhotoHovered ? '0 8px 20px rgba(255,107,0,0.22)' : 'none',
+                        transform: isProfilePhotoHovered ? 'translateY(-1px) scale(1.05)' : 'translateY(0) scale(1)',
+                        transition: 'all 0.16s ease',
+                      }}
+                      onMouseEnter={() => setIsProfilePhotoHovered(true)}
+                      onMouseLeave={() => setIsProfilePhotoHovered(false)}
+                    >
+                      <Camera size={18} />
+                    </button>
+                    <input
+                      ref={profilePhotoInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={onSelectProfilePhoto}
+                      style={{ display: 'none' }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gap: '12px' }}>
+                  <div style={{
+                    border: isProfileNameFocused || isProfileNameHovered ? '1px solid #FF6B00' : '1px solid #3f3f46',
+                    boxShadow: isProfileNameFocused ? '0 0 0 3px rgba(255,107,0,0.22), 0 10px 24px rgba(255,107,0,0.10)' : isProfileNameHovered ? '0 6px 18px rgba(255,107,0,0.10)' : 'none',
+                    transform: isProfileNameFocused || isProfileNameHovered ? 'translateY(-1px)' : 'translateY(0)',
+                    transition: 'all 0.16s ease',
+                    borderRadius: '10px',
+                    padding: '10px 14px',
+                  }}>
+                    <label style={{ display: 'block', color: '#d1d5db', fontSize: '13px', marginBottom: '6px', fontFamily: "'Fira Code', monospace", fontWeight: '700', letterSpacing: '0.03em' }}>Nome de exibicao</label>
+                    <input
+                      value={profileNameDraft}
+                      onChange={(event) => setProfileNameDraft(event.target.value)}
+                      placeholder="Digite seu nome"
+                      style={{
+                        width: '100%',
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#f3f4f6',
+                        fontSize: '31px',
+                        outline: 'none',
+                        padding: 0,
+                        fontFamily: "'Fira Code', monospace",
+                        transition: 'color 0.16s ease, letter-spacing 0.16s ease',
+                        letterSpacing: isProfileNameFocused || isProfileNameHovered ? '0.01em' : '0',
+                      }}
+                      onMouseEnter={() => setIsProfileNameHovered(true)}
+                      onMouseLeave={() => setIsProfileNameHovered(false)}
+                      onFocus={() => setIsProfileNameFocused(true)}
+                      onBlur={() => setIsProfileNameFocused(false)}
+                    />
+                  </div>
+
+                  <div style={{
+                    border: '1px solid #3f3f46',
+                    boxShadow: isProfileNameHovered ? '0 6px 18px rgba(255,107,0,0.06)' : 'none',
+                    transform: isProfileNameHovered ? 'translateY(-1px)' : 'translateY(0)',
+                    transition: 'all 0.16s ease',
+                    borderRadius: '10px',
+                    padding: '10px 14px',
+                  }}>
+                    <label style={{ display: 'block', color: '#d1d5db', fontSize: '13px', marginBottom: '6px', fontFamily: "'Fira Code', monospace", fontWeight: '700', letterSpacing: '0.03em' }}>Nome de usuario</label>
+                    <div style={{ color: '#f3f4f6', fontSize: '30px', fontFamily: "'Fira Code', monospace" }}>
+                      {String(accountEmail || '').split('@')[0] || 'usuario'}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ color: '#9ca3af', fontSize: '13px', marginTop: '12px', lineHeight: '1.5', textAlign: 'center' }}>
+                  Seu perfil ajuda as pessoas a reconhecerem voce. Seu nome e foto tambem sao usados no aplicativo.
+                </div>
+
+                {profileStatus ? (
+                  <div style={{ color: '#fca5a5', fontSize: '12px', marginTop: '10px' }}>
+                    {profileStatus}
+                  </div>
+                ) : null}
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '18px' }}>
+                  <button
+                    type="button"
+                    onClick={closeProfile}
+                    style={{
+                      background: isProfileCancelHovered ? '#1a1208' : '#2a2f3a',
+                      color: isProfileCancelHovered ? '#fff' : '#f3f4f6',
+                      border: isProfileCancelHovered ? '1px solid #FF6B00' : '1px solid #4b5563',
+                      borderRadius: '999px',
+                      padding: '10px 20px',
+                      fontSize: '16px',
+                      fontFamily: "'Fira Code', monospace",
+                      transform: isProfileCancelPressed ? 'translateY(1px) scale(0.98)' : isProfileCancelHovered ? 'translateY(-1px) scale(1.02)' : 'translateY(0) scale(1)',
+                      boxShadow: isProfileCancelHovered ? '0 8px 22px rgba(255,107,0,0.14)' : 'none',
+                      transition: 'all 0.16s ease',
+                      cursor: 'pointer',
+                    }}
+                    onMouseEnter={() => setIsProfileCancelHovered(true)}
+                    onMouseLeave={() => {
+                      setIsProfileCancelHovered(false)
+                      setIsProfileCancelPressed(false)
+                    }}
+                    onMouseDown={() => setIsProfileCancelPressed(true)}
+                    onMouseUp={() => setIsProfileCancelPressed(false)}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={saveProfile}
+                    style={{
+                      background: isProfileSaveHovered ? '#FF6B00' : '#f3f4f6',
+                      color: isProfileSaveHovered ? '#fff' : '#0f172a',
+                      border: isProfileSaveHovered ? '1px solid #FF6B00' : '1px solid #f3f4f6',
+                      borderRadius: '999px',
+                      padding: '10px 20px',
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      fontFamily: "'Fira Code', monospace",
+                      transform: isProfileSavePressed ? 'translateY(1px) scale(0.98)' : isProfileSaveHovered ? 'translateY(-1px) scale(1.02)' : 'translateY(0) scale(1)',
+                      boxShadow: isProfileSaveHovered ? '0 10px 24px rgba(255,107,0,0.26)' : 'none',
+                      transition: 'all 0.16s ease',
+                      cursor: 'pointer',
+                    }}
+                    onMouseEnter={() => setIsProfileSaveHovered(true)}
+                    onMouseLeave={() => {
+                      setIsProfileSaveHovered(false)
+                      setIsProfileSavePressed(false)
+                    }}
+                    onMouseDown={() => setIsProfileSavePressed(true)}
+                    onMouseUp={() => setIsProfileSavePressed(false)}
+                  >
+                    Salvar
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Add Account Modal */}
           {isAddAccountModalOpen && (
             <div style={{
@@ -554,13 +931,10 @@ export default function Navbar() {
                 }}>
                   {(recentAccounts.length ? recentAccounts : [{ email: accountEmail, name: accountName, provider: 'local' }]).map((account, index) => {
                     const isCurrentAccount = account.email === accountEmail || index === 0
-                    const avatarText = (account.name || account.email || 'M')
-                      .split(' ')
-                      .filter(Boolean)
-                      .slice(0, 2)
-                      .map((word) => word[0])
-                      .join('')
-                      .toUpperCase()
+                    const profile = getProfileForEmail(account.email)
+                    const avatarDataUrl = profile.avatarDataUrl
+                    const accountDisplayName = profile.displayName || account.name || account.email
+                    const avatarText = computeAvatarInitials(accountDisplayName || account.email)
 
                     return (
                       <div
@@ -601,8 +975,13 @@ export default function Navbar() {
                           fontSize: '10px',
                           fontWeight: '700',
                           flexShrink: 0,
+                          overflow: 'hidden',
                         }}>
-                          {avatarText || 'MA'}
+                          {avatarDataUrl ? (
+                            <img src={avatarDataUrl} alt="Foto da conta" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            avatarText || 'MA'
+                          )}
                         </div>
 
                         <div style={{ minWidth: 0, flex: 1 }}>
@@ -615,7 +994,7 @@ export default function Navbar() {
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                           }}>
-                            {account.name || account.email}
+                            {accountDisplayName}
                           </div>
                           <div style={{
                             color: '#d1d5db',
@@ -691,7 +1070,7 @@ export default function Navbar() {
                   style={{
                     width: '100%',
                     background: 'transparent',
-                    color: '#ffffff',
+                    color: '#d1d5db',
                     border: 'none',
                     borderRadius: '12px',
                     padding: '12px 10px',
@@ -702,13 +1081,15 @@ export default function Navbar() {
                     alignItems: 'center',
                     gap: '14px',
                     textAlign: 'left',
-                    transition: 'background 0.16s ease',
+                    transition: 'all 0.16s ease',
                   }}
                   onMouseEnter={e => {
                     e.currentTarget.style.background = '#1a2233'
+                    e.currentTarget.style.color = '#FFB37D'
                   }}
                   onMouseLeave={e => {
                     e.currentTarget.style.background = 'transparent'
+                    e.currentTarget.style.color = '#d1d5db'
                   }}
                 >
                   <Plus size={20} strokeWidth={1.8} />
