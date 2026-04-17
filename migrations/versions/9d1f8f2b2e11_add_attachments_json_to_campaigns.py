@@ -20,11 +20,27 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
-    op.add_column("campaigns", sa.Column("attachments_json", sa.Text(), nullable=True))
-    op.add_column("campaigns", sa.Column("task_id", sa.String(), nullable=True))
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    existing_columns = {column["name"] for column in inspector.get_columns("campaigns")}
+
+    if "attachments_json" not in existing_columns:
+        op.add_column(
+            "campaigns", sa.Column("attachments_json", sa.Text(), nullable=True)
+        )
+
+    if "task_id" not in existing_columns:
+        op.add_column("campaigns", sa.Column("task_id", sa.String(), nullable=True))
 
 
 def downgrade() -> None:
     """Downgrade schema."""
-    op.drop_column("campaigns", "task_id")
-    op.drop_column("campaigns", "attachments_json")
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    existing_columns = {column["name"] for column in inspector.get_columns("campaigns")}
+
+    if "task_id" in existing_columns:
+        op.drop_column("campaigns", "task_id")
+
+    if "attachments_json" in existing_columns:
+        op.drop_column("campaigns", "attachments_json")

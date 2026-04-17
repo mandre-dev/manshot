@@ -322,6 +322,12 @@ export default function Credentials() {
       return
     }
 
+    if (emailUser && (!emailUser.includes('@') || emailUser.startsWith('@') || emailUser.endsWith('@'))) {
+      setSaving(false)
+      setStatus('Email remetente invalido. Use um endereco completo, como nome@dominio.com.')
+      return
+    }
+
     if (normalizedEmailPassword && normalizedEmailPassword.length < 16) {
       setSaving(false)
       setStatus('Senha do email invalida para Gmail SMTP. Use App Password (16 caracteres), nao o codigo do Authenticator.')
@@ -399,7 +405,7 @@ export default function Credentials() {
     <div>
       <div style={{ marginBottom: '24px' }}>
         <div style={{ color: '#6b7280', fontSize: '12px', marginBottom: '4px' }}>
-          Configuracao por usuario
+          Gerenciamento
         </div>
         <div style={{ color: '#fff', fontSize: '22px', fontFamily: "'Fira Code', monospace", fontWeight: '700' }}>
           CREDENCIAIS DE REMETENTE
@@ -540,13 +546,13 @@ export default function Credentials() {
                 <InteractiveInput value={form.sms_vonage_secret} onChange={onChange('sms_vonage_secret')} placeholder="Digite para atualizar" type="password" />
               </Field>
               <Field label="Remetente padrao SMS">
-                <InteractiveInput value={form.sms_default_from} onChange={onChange('sms_default_from')} placeholder="JOAOEMPRESA ou 5511999999999" />
+                <InteractiveInput value={form.sms_default_from} onChange={onChange('sms_default_from')} placeholder="Digite o nome do remetente" />
               </Field>
             </div>
             <div style={hintStyle}>
               O Manshot envia este remetente para o Vonage, mas em conta demo/trial o
               provedor pode sobrescrever o identificador mostrado no topo do SMS
-              (ex.: codigo curto como 30342 e texto FREE SMS DEMO).
+              (ex.: codigo curto como 30342 e texto FREE SMS DEMO). Por padrão virá na mensagem [Manhot].
             </div>
           </div>
 

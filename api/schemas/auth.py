@@ -87,3 +87,22 @@ class SenderCredentialsPatch(BaseModel):
     sms_vonage_secret: str | None = None
     sms_default_from: str | None = None
     telegram_bot_token: str | None = None
+
+    @field_validator("email_user")
+    @classmethod
+    def validate_email_user(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+
+        normalized = value.strip().lower()
+        if not normalized:
+            return None
+
+        if (
+            "@" not in normalized
+            or normalized.startswith("@")
+            or normalized.endswith("@")
+        ):
+            raise ValueError("Email remetente inválido")
+
+        return normalized

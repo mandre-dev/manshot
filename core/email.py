@@ -12,6 +12,7 @@ from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.image import MIMEImage
 from email.mime.text import MIMEText
+from email.utils import parseaddr
 from pathlib import Path
 import re
 from urllib.parse import urlparse
@@ -24,6 +25,7 @@ from .config import settings
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 UPLOADS_DIR = PROJECT_ROOT / "uploads"
 PREFIX_RE = re.compile(r"^[0-9a-f]{8}_(.+)$", re.IGNORECASE)
+EMAIL_IN_TEXT_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 
 
 class EmailChannel(BaseChannel):
@@ -140,6 +142,19 @@ class EmailChannel(BaseChannel):
 
         return normalized
 
+    @staticmethod
+    def _sanitize_from_name(name: str | None) -> str:
+        """Garante que o nome exibido não carregue endereço de email embutido."""
+        raw = (name or "").strip()
+        if not raw:
+            return ""
+
+        parsed_name, _ = parseaddr(raw)
+        candidate = (parsed_name or raw).replace("<", " ").replace(">", " ")
+        candidate = EMAIL_IN_TEXT_RE.sub("", candidate)
+        candidate = " ".join(candidate.split()).strip("\"' ")
+        return candidate
+
     def send(
         self,
         contact: Contact,
@@ -162,12 +177,11 @@ class EmailChannel(BaseChannel):
         """
         try:
             effective_smtp_user = (smtp_user or settings.GMAIL_USER or "").strip()
-            effective_from_name = (
-                from_display_name
-                or effective_smtp_user
-                or settings.EMAIL_FROM_NAME
-                or ""
-            ).strip() or "Manshot"
+            effective_from_name = self._sanitize_from_name(from_display_name)
+            if not effective_from_name:
+                effective_from_name = (
+                    self._sanitize_from_name(settings.EMAIL_FROM_NAME) or "Manshot"
+                )
 
             personalized_message = message.format(name=contact.name)
             attachment_items = self._normalize_attachment_items(attachments, image_url)
@@ -192,7 +206,8 @@ class EmailChannel(BaseChannel):
 
             msg = MIMEMultipart("mixed")
             msg["Subject"] = subject or f"Mensagem de {effective_from_name}"
-            msg["From"] = f"{effective_from_name} <{effective_smtp_user}>"
+            msg["From"] = effective_from_name
+            msg["Reply-To"] = effective_smtp_user
             msg["To"] = contact.destination
 
             body = MIMEMultipart("related")
