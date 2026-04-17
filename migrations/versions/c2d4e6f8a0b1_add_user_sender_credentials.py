@@ -18,24 +18,44 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column("users", sa.Column("sender_email_smtp_host", sa.String(), nullable=True))
-    op.add_column("users", sa.Column("sender_email_smtp_port", sa.Integer(), nullable=True))
-    op.add_column("users", sa.Column("sender_email_user", sa.String(), nullable=True))
-    op.add_column("users", sa.Column("sender_email_password", sa.String(), nullable=True))
-    op.add_column("users", sa.Column("sender_email_from_name", sa.String(), nullable=True))
-    op.add_column("users", sa.Column("sender_sms_vonage_key", sa.String(), nullable=True))
-    op.add_column("users", sa.Column("sender_sms_vonage_secret", sa.String(), nullable=True))
-    op.add_column("users", sa.Column("sender_sms_default_from", sa.String(), nullable=True))
-    op.add_column("users", sa.Column("sender_telegram_bot_token", sa.String(), nullable=True))
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    existing_columns = {column["name"] for column in inspector.get_columns("users")}
+
+    columns_to_add = [
+        sa.Column("sender_email_smtp_host", sa.String(), nullable=True),
+        sa.Column("sender_email_smtp_port", sa.Integer(), nullable=True),
+        sa.Column("sender_email_user", sa.String(), nullable=True),
+        sa.Column("sender_email_password", sa.String(), nullable=True),
+        sa.Column("sender_email_from_name", sa.String(), nullable=True),
+        sa.Column("sender_sms_vonage_key", sa.String(), nullable=True),
+        sa.Column("sender_sms_vonage_secret", sa.String(), nullable=True),
+        sa.Column("sender_sms_default_from", sa.String(), nullable=True),
+        sa.Column("sender_telegram_bot_token", sa.String(), nullable=True),
+    ]
+
+    for column in columns_to_add:
+        if column.name not in existing_columns:
+            op.add_column("users", column)
 
 
 def downgrade() -> None:
-    op.drop_column("users", "sender_telegram_bot_token")
-    op.drop_column("users", "sender_sms_default_from")
-    op.drop_column("users", "sender_sms_vonage_secret")
-    op.drop_column("users", "sender_sms_vonage_key")
-    op.drop_column("users", "sender_email_from_name")
-    op.drop_column("users", "sender_email_password")
-    op.drop_column("users", "sender_email_user")
-    op.drop_column("users", "sender_email_smtp_port")
-    op.drop_column("users", "sender_email_smtp_host")
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    existing_columns = {column["name"] for column in inspector.get_columns("users")}
+
+    columns_to_drop = [
+        "sender_telegram_bot_token",
+        "sender_sms_default_from",
+        "sender_sms_vonage_secret",
+        "sender_sms_vonage_key",
+        "sender_email_from_name",
+        "sender_email_password",
+        "sender_email_user",
+        "sender_email_smtp_port",
+        "sender_email_smtp_host",
+    ]
+
+    for column_name in columns_to_drop:
+        if column_name in existing_columns:
+            op.drop_column("users", column_name)

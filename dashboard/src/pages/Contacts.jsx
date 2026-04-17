@@ -193,6 +193,12 @@ export default function Contacts() {
 
   const googleImportUnavailableMessage = 'Importacao do Google indisponivel para esta conta. Para importar contatos do Google, entre com uma conta Google.'
 
+  function isValidEmail(value) {
+    const normalized = String(value || '').trim().toLowerCase()
+    if (!normalized) return true
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)
+  }
+
   function handleCancelEdit() {
     setIsCancelPressed(true)
     window.setTimeout(() => {
@@ -271,6 +277,12 @@ export default function Contacts() {
 
   async function handleSubmit(e) {
     e.preventDefault()
+
+    if (!isValidEmail(form.email)) {
+      alert('Email do contato invalido. Use um endereco completo, como nome@dominio.com.')
+      return
+    }
+
     try {
       if (editingId) {
         await updateContact(editingId, form)
@@ -321,9 +333,10 @@ export default function Contacts() {
       let imported = 0
       for (const row of rows) {
         try {
+          const importedEmail = String(row.email || row.Email || '').trim().toLowerCase()
           await createContact({
             name: row.name || row.nome || row.Name || '',
-            email: row.email || row.Email || '',
+            email: isValidEmail(importedEmail) ? importedEmail : '',
             phone: row.phone || row.telefone || row.Phone || '',
             telegram_id: row.telegram_id || row.telegram || '',
           })
@@ -362,15 +375,16 @@ export default function Contacts() {
         let imported = 0
         for (const person of people) {
           const name = person.names?.[0]?.displayName || ''
-          const email = person.emailAddresses?.[0]?.value || ''
+          const email = (person.emailAddresses?.[0]?.value || '').trim().toLowerCase()
           const phone = person.phoneNumbers?.[0]?.value || ''
+          const safeEmail = isValidEmail(email) ? email : ''
 
-          if (!name && !email && !phone) continue
+          if (!name && !safeEmail && !phone) continue
 
           try {
             await createContact({
-              name: name || email || phone || 'Contato Google',
-              email,
+              name: name || safeEmail || phone || 'Contato Google',
+              email: safeEmail,
               phone,
               telegram_id: '',
             })

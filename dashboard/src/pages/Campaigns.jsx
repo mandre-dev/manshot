@@ -646,10 +646,6 @@ export default function Campaigns() {
                   onBlur={() => setFocusedField('')}
                   onChange={e => setForm({ ...form, sms_from: e.target.value })}
                 />
-                <div style={{ color: '#9ca3af', fontSize: '11px', marginTop: '-4px', lineHeight: '1.5', fontFamily: "'Space Mono', monospace" }}>
-                  Em conta Vonage demo/trial, o remetente do topo do SMS pode ser
-                  substituido pelo provedor (ex.: 30342 / FREE SMS DEMO).
-                </div>
               </>
             )}
 
