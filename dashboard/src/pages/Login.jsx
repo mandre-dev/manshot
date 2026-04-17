@@ -243,7 +243,32 @@ export default function Login() {
           Acesso seguro
         </div>
         <h1 style={{ color: '#fff', fontSize: '24px', margin: '0 0 20px 0', fontFamily: "'Fira Code', monospace" }}>
-          {isRegisterMode ? 'Criar Conta Manshot' : 'Login Manshot'}
+          <style>{`
+            @keyframes manshotGlowLoop {
+              0% {
+                color: #ffffff;
+                text-shadow: 0 0 0 rgba(255,107,0,0), 0 0 0 rgba(255,255,255,0);
+              }
+              25% {
+                color: #fff4e8;
+                text-shadow: 0 0 6px rgba(255,107,0,0.45), 0 0 16px rgba(255,107,0,0.20);
+              }
+              50% {
+                color: #FFB37D;
+                text-shadow: 0 0 10px rgba(255,107,0,0.75), 0 0 22px rgba(255,107,0,0.35);
+              }
+              75% {
+                color: #fff4e8;
+                text-shadow: 0 0 6px rgba(255,107,0,0.45), 0 0 16px rgba(255,107,0,0.20);
+              }
+              100% {
+                color: #ffffff;
+                text-shadow: 0 0 0 rgba(255,107,0,0), 0 0 0 rgba(255,255,255,0);
+              }
+            }
+          `}</style>
+          {isRegisterMode ? 'Criar Conta ' : 'Login '}
+          <span style={{ animation: 'manshotGlowLoop 2.8s ease-in-out infinite' }}>Manshot</span>
         </h1>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
