@@ -696,7 +696,7 @@ export default function Navbar() {
                   style={{
                     width: '100%',
                     background: 'transparent',
-                    color: '#ffffff',
+                    color: '#d1d5db',
                     border: 'none',
                     borderRadius: '12px',
                     padding: '12px 10px',
@@ -707,13 +707,15 @@ export default function Navbar() {
                     alignItems: 'center',
                     gap: '14px',
                     textAlign: 'left',
-                    transition: 'background 0.16s ease',
+                    transition: 'all 0.16s ease',
                   }}
                   onMouseEnter={e => {
                     e.currentTarget.style.background = '#1a2233'
+                    e.currentTarget.style.color = '#FFB37D'
                   }}
                   onMouseLeave={e => {
                     e.currentTarget.style.background = 'transparent'
+                    e.currentTarget.style.color = '#d1d5db'
                   }}
                 >
                   <Plus size={20} strokeWidth={1.8} />
