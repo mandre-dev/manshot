@@ -209,7 +209,7 @@ google_client_secret=
 ## 1) API
 
 ```bash
-cd /home/mandre/manshot
+cd /home/manshot
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
