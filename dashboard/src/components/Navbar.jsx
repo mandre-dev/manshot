@@ -6,7 +6,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Plus, User, Users, LogOut, FileText, Fingerprint, Camera } from 'lucide-react'
 import { useGoogleLogin } from '@react-oauth/google'
 import logo from '../assets/logo-manshot.png'
-import { activateStoredAccountSession, clearToken, deriveAccountDisplayName, getMe, getStoredAccounts, googleLogin, inferAccountProviderByEmail, rememberAccount, removeStoredAccount, saveToken, setAuthProvider } from '../services/api'
+import { activateStoredAccountSession, clearToken, deleteMyAccount, deriveAccountDisplayName, getMe, getStoredAccounts, googleLogin, inferAccountProviderByEmail, rememberAccount, removeStoredAccount, saveToken, setAuthProvider } from '../services/api'
 
 const links = [
   { path: '/', icon: '⚡', label: 'Dashboard' },
@@ -52,6 +52,17 @@ function saveProfileForEmail(email, payload) {
   localStorage.setItem(PROFILE_PREFS_KEY, JSON.stringify(current))
 }
 
+function removeProfileForEmail(email) {
+  const normalizedEmail = (email || '').trim().toLowerCase()
+  if (!normalizedEmail || typeof window === 'undefined') return
+
+  const current = readProfilePrefs()
+  if (!current[normalizedEmail]) return
+
+  delete current[normalizedEmail]
+  localStorage.setItem(PROFILE_PREFS_KEY, JSON.stringify(current))
+}
+
 function computeAvatarInitials(name) {
   return (name || '')
     .split(' ')
@@ -85,6 +96,14 @@ export default function Navbar() {
   const [isProfileCancelPressed, setIsProfileCancelPressed] = useState(false)
   const [isProfileSaveHovered, setIsProfileSaveHovered] = useState(false)
   const [isProfileSavePressed, setIsProfileSavePressed] = useState(false)
+  const [isProfileDeleteHovered, setIsProfileDeleteHovered] = useState(false)
+  const [isProfileDeletePressed, setIsProfileDeletePressed] = useState(false)
+  const [isConfirmDeleteAccountOpen, setIsConfirmDeleteAccountOpen] = useState(false)
+  const [isDeleteAccountBtnHovered, setIsDeleteAccountBtnHovered] = useState(false)
+  const [isDeleteAccountBtnPressed, setIsDeleteAccountBtnPressed] = useState(false)
+  const [isDeleteAccountCancelHovered, setIsDeleteAccountCancelHovered] = useState(false)
+  const [isDeleteAccountCancelPressed, setIsDeleteAccountCancelPressed] = useState(false)
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false)
   const [isConfirmLogoutOpen, setIsConfirmLogoutOpen] = useState(false)
   const [isLogoutBtnHovered, setIsLogoutBtnHovered] = useState(false)
   const [isLogoutBtnPressed, setIsLogoutBtnPressed] = useState(false)
@@ -214,6 +233,39 @@ export default function Navbar() {
     )))
     rememberAccount({ email: normalizedEmail, name: nextName })
     closeProfile()
+  }
+
+  const handleDeleteLoggedAccountClick = () => {
+    closeProfile()
+    setIsConfirmDeleteAccountOpen(true)
+  }
+
+  const cancelDeleteLoggedAccount = () => {
+    if (isDeletingAccount) return
+    setIsConfirmDeleteAccountOpen(false)
+  }
+
+  const confirmDeleteLoggedAccount = async () => {
+    if (isDeletingAccount) return
+
+    setIsDeletingAccount(true)
+    const normalizedEmail = (accountEmail || '').trim().toLowerCase()
+
+    try {
+      await deleteMyAccount()
+      removeStoredAccount(normalizedEmail)
+      removeProfileForEmail(normalizedEmail)
+      clearToken()
+      setIsConfirmDeleteAccountOpen(false)
+      navigate('/login')
+    } catch (error) {
+      const detail = error?.response?.data?.detail
+      setProfileStatus(typeof detail === 'string' ? detail : 'Falha ao excluir conta.')
+      setIsConfirmDeleteAccountOpen(false)
+      setIsProfileOpen(true)
+    } finally {
+      setIsDeletingAccount(false)
+    }
   }
 
   const confirmLogout = () => {
@@ -777,7 +829,34 @@ export default function Navbar() {
                   </div>
                 ) : null}
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '18px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', marginTop: '18px' }}>
+                  <button
+                    type="button"
+                    onClick={handleDeleteLoggedAccountClick}
+                    style={{
+                      background: isProfileDeleteHovered ? '#7f1d1d' : '#3f1d24',
+                      color: '#fecaca',
+                      border: isProfileDeleteHovered ? '1px solid #ef4444' : '1px solid #7f1d1d',
+                      borderRadius: '999px',
+                      padding: '10px 18px',
+                      fontSize: '15px',
+                      fontFamily: "'Fira Code', monospace",
+                      transform: isProfileDeletePressed ? 'translateY(1px) scale(0.98)' : isProfileDeleteHovered ? 'translateY(-1px) scale(1.02)' : 'translateY(0) scale(1)',
+                      boxShadow: isProfileDeleteHovered ? '0 8px 22px rgba(239,68,68,0.22)' : 'none',
+                      transition: 'all 0.16s ease',
+                      cursor: 'pointer',
+                    }}
+                    onMouseEnter={() => setIsProfileDeleteHovered(true)}
+                    onMouseLeave={() => {
+                      setIsProfileDeleteHovered(false)
+                      setIsProfileDeletePressed(false)
+                    }}
+                    onMouseDown={() => setIsProfileDeletePressed(true)}
+                    onMouseUp={() => setIsProfileDeletePressed(false)}
+                  >
+                    Excluir conta
+                  </button>
+                  <div style={{ display: 'flex', gap: '10px' }}>
                   <button
                     type="button"
                     onClick={closeProfile}
@@ -831,6 +910,7 @@ export default function Navbar() {
                   >
                     Salvar
                   </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1124,6 +1204,119 @@ export default function Navbar() {
                   <Plus size={20} strokeWidth={1.8} />
                   <span>Adicionar com e-mail</span>
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* Delete Account Confirmation Modal */}
+          {isConfirmDeleteAccountOpen && (
+            <div style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(4,8,16,0.96)',
+              backdropFilter: 'blur(12px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 2147483647,
+              animation: 'fadeInOverlay 0.2s ease',
+            }}>
+              <div style={{
+                background: '#131a27',
+                border: '1px solid #2a1a0a',
+                borderRadius: '16px',
+                padding: '32px',
+                maxWidth: '460px',
+                width: '90%',
+                textAlign: 'center',
+                boxShadow: '0 20px 60px rgba(0,0,0,0.85)',
+                animation: 'slideInModal 0.2s ease',
+              }}>
+                <h2 style={{
+                  color: '#fecaca',
+                  fontSize: '20px',
+                  fontWeight: '600',
+                  marginBottom: '12px',
+                  lineHeight: '1.4',
+                }}>
+                  Excluir conta permanentemente?
+                </h2>
+                <p style={{
+                  color: '#d1d5db',
+                  fontSize: '14px',
+                  marginBottom: '8px',
+                  lineHeight: '1.5',
+                }}>
+                  Esta ação remove sua conta logada, campanhas e contatos associados.
+                </p>
+                <p style={{
+                  color: '#9ca3af',
+                  fontSize: '13px',
+                  marginBottom: '28px',
+                  lineHeight: '1.5',
+                }}>
+                  Conta atual: {accountEmail}
+                </p>
+                <div style={{
+                  display: 'flex',
+                  gap: '12px',
+                  flexDirection: 'column',
+                }}>
+                  <button
+                    onClick={confirmDeleteLoggedAccount}
+                    disabled={isDeletingAccount}
+                    style={{
+                      padding: '12px 16px',
+                      background: isDeleteAccountBtnHovered ? '#dc2626' : '#b91c1c',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '24px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      cursor: isDeletingAccount ? 'not-allowed' : 'pointer',
+                      opacity: isDeletingAccount ? 0.8 : 1,
+                      transition: 'all 0.18s ease',
+                      transform: isDeleteAccountBtnPressed ? 'translateY(1px) scale(0.98)' : isDeleteAccountBtnHovered ? 'translateY(-1px) scale(1.02)' : 'translateY(0) scale(1)',
+                      boxShadow: isDeleteAccountBtnHovered ? '0 8px 24px rgba(220,38,38,0.35)' : 'none',
+                    }}
+                    onMouseEnter={() => setIsDeleteAccountBtnHovered(true)}
+                    onMouseLeave={() => {
+                      setIsDeleteAccountBtnHovered(false)
+                      setIsDeleteAccountBtnPressed(false)
+                    }}
+                    onMouseDown={() => setIsDeleteAccountBtnPressed(true)}
+                    onMouseUp={() => setIsDeleteAccountBtnPressed(false)}
+                  >
+                    {isDeletingAccount ? 'Excluindo conta...' : 'Excluir conta'}
+                  </button>
+                  <button
+                    onClick={cancelDeleteLoggedAccount}
+                    disabled={isDeletingAccount}
+                    style={{
+                      padding: '12px 16px',
+                      background: isDeleteAccountCancelHovered ? '#1a1208' : 'transparent',
+                      color: isDeleteAccountCancelPressed ? '#FF6B00' : isDeleteAccountCancelHovered ? '#e5e7eb' : '#9ca3af',
+                      border: '1px solid #2a1a0a',
+                      borderRadius: '24px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      cursor: isDeletingAccount ? 'not-allowed' : 'pointer',
+                      opacity: isDeletingAccount ? 0.8 : 1,
+                      transition: 'all 0.18s ease',
+                      transform: isDeleteAccountCancelPressed ? 'translateY(1px) scale(0.98)' : isDeleteAccountCancelHovered ? 'translateY(-1px) scale(1.02)' : 'translateY(0) scale(1)',
+                      boxShadow: isDeleteAccountCancelHovered ? '0 8px 24px rgba(255,107,0,0.15)' : 'none',
+                    }}
+                    onMouseEnter={() => setIsDeleteAccountCancelHovered(true)}
+                    onMouseLeave={() => {
+                      setIsDeleteAccountCancelHovered(false)
+                      setIsDeleteAccountCancelPressed(false)
+                    }}
+                    onMouseDown={() => setIsDeleteAccountCancelPressed(true)}
+                    onMouseUp={() => setIsDeleteAccountCancelPressed(false)}
+                  >
+                    Manter conta
+                  </button>
+                </div>
               </div>
             </div>
           )}

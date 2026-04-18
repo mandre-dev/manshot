@@ -13,6 +13,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from api.database import get_db
+from api.models.campaign import Campaign
+from api.models.contact import Contact
 from api.models.user import User
 from api.schemas.auth import (
     CredentialsCheckResponse,
@@ -303,3 +305,32 @@ def patch_sender_credentials(
     db.commit()
     db.refresh(user)
     return _sender_credentials_response_for_user(user)
+
+
+@router.delete("/me")
+def delete_my_account(
+    current_user: str = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Exclui a conta autenticada e os dados vinculados a ela."""
+    current_email = current_user.strip().lower()
+
+    if current_email == settings.ADMIN_EMAIL.lower():
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="A conta administrativa não pode ser excluída.",
+        )
+
+    user = db.query(User).filter(User.email == current_email).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Usuário não encontrado",
+        )
+
+    db.query(Contact).filter(Contact.owner_email == current_email).delete()
+    db.query(Campaign).filter(Campaign.owner_email == current_email).delete()
+    db.delete(user)
+    db.commit()
+
+    return {"message": "Conta excluída com sucesso."}
