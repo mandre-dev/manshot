@@ -72,10 +72,23 @@ def ensure_user_sender_credential_columns() -> None:
                 )
 
 
+def ensure_user_is_admin_column() -> None:
+    inspector = inspect(engine)
+    if "users" not in inspector.get_table_names():
+        return
+
+    existing_columns = {column["name"] for column in inspector.get_columns("users")}
+    if "is_admin" in existing_columns:
+        return
+
+    with engine.begin() as connection:
+        connection.execute(text("ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT 0"))
+
+
 def create_admin_user() -> None:
     from api.models import User
-    from api.core.auth import get_password_hash
-    from api.core.config import settings
+    from core.auth import get_password_hash
+    from core.config import settings
 
     db = SessionLocal()
     try:
@@ -83,7 +96,7 @@ def create_admin_user() -> None:
         if not admin:
             admin = User(
                 email=settings.ADMIN_EMAIL,
-                hashed_password=get_password_hash(settings.ADMIN_PASSWORD),
+                password_hash=get_password_hash(settings.ADMIN_PASSWORD),
                 is_admin=True,
             )
             db.add(admin)
@@ -100,6 +113,7 @@ Base.metadata.create_all(bind=engine)
 ensure_campaign_attachments_column()
 ensure_contact_pinned_column()
 ensure_user_sender_credential_columns()
+ensure_user_is_admin_column()
 create_admin_user()
 
 app = FastAPI(
