@@ -91,7 +91,7 @@ def ensure_user_is_admin_column() -> None:
 
 def create_admin_user() -> None:
     from api.models import User
-    from core.auth import get_password_hash
+    from api.core.auth import hash_password
     from core.config import settings
 
     db = SessionLocal()
