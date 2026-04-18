@@ -9,7 +9,7 @@ python-dotenv==1.0.1
 # API (Fase 2)
 fastapi==0.111.0
 uvicorn==0.29.0
-sqlalchemy==2.0.29
+sqlalchemy>=2.0.0
 
 # Fila assíncrona (Fase 4)
 celery==5.3.6
