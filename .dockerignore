@@ -1,0 +1,27 @@
+# Git and editor
+.git
+.gitignore
+.vscode
+
+# Python
+.venv
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Node (dashboard dependencies are handled in dashboard build context)
+dashboard/node_modules
+
+# Runtime artifacts
+uploads/
+*.db
+*.sqlite3
+
+# Environment and local notes
+.env
+manshot skills
+
+# Docker
+docker-compose*.yml

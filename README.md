@@ -127,6 +127,7 @@
 - Node.js `18+`
 - Redis `7+`
 - npm `9+` (recomendado)
+- Docker + Docker Compose (opcional, recomendado para ambiente padronizado)
 
 ## Arquitetura
 
@@ -240,16 +241,52 @@ npm run dev
 
 ## Docker (guia rapido)
 
-O repositorio ainda nao possui `Dockerfile` e `docker-compose.yml` oficiais.
+O projeto ja possui containerizacao para os servicos principais:
 
-Enquanto isso, a forma recomendada para desenvolvimento e usar os comandos locais acima.
+- `api` (FastAPI)
+- `worker` (Celery)
+- `redis` (broker/backend)
+- `dashboard` (Vite)
 
-Se voce quiser, na proxima iteracao posso gerar os arquivos oficiais de containerizacao para:
+Arquivos usados:
 
-- API FastAPI
-- Worker Celery
-- Redis
-- Dashboard React
+- `docker-compose.yml`
+- `Dockerfile.backend`
+- `dashboard/Dockerfile`
+
+## Subir com Docker
+
+```bash
+cd /home/mandre/manshot
+docker compose up --build
+```
+
+Servicos e portas:
+
+- API: `http://127.0.0.1:8000`
+- Docs: `http://127.0.0.1:8000/docs`
+- Dashboard: `http://localhost:5173`
+- Redis: `localhost:6379`
+
+## Rodar em background
+
+```bash
+docker compose up -d --build
+```
+
+## Parar tudo
+
+```bash
+docker compose down
+```
+
+## Ver logs
+
+```bash
+docker compose logs -f api
+docker compose logs -f worker
+docker compose logs -f dashboard
+```
 
 ## Endpoints principais
 
