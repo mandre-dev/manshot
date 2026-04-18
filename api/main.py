@@ -43,7 +43,9 @@ def ensure_contact_pinned_column() -> None:
         return
 
     with engine.begin() as connection:
-        connection.execute(text("ALTER TABLE contacts ADD COLUMN pinned BOOLEAN DEFAULT 0"))
+        connection.execute(
+            text("ALTER TABLE contacts ADD COLUMN pinned BOOLEAN DEFAULT 0")
+        )
 
 
 def ensure_user_sender_credential_columns() -> None:
@@ -82,7 +84,9 @@ def ensure_user_is_admin_column() -> None:
         return
 
     with engine.begin() as connection:
-        connection.execute(text("ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT 0"))
+        connection.execute(
+            text("ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT 0")
+        )
 
 
 def create_admin_user() -> None:
