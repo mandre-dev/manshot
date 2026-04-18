@@ -1,133 +1,120 @@
 # Manshot
 
-Plataforma de disparo em massa multicanal com foco em produtividade para campanhas de Email, SMS e Telegram.
+<p align="center">
+  <img alt="Manshot" src="https://img.shields.io/badge/MANSHOT-FF6B00?style=for-the-badge&labelColor=0D1117" />
+  <img alt="Status" src="https://img.shields.io/badge/Status-Online-1F8B4C?style=for-the-badge" />
+  <img alt="API" src="https://img.shields.io/badge/API-FastAPI-05998B?style=for-the-badge&logo=fastapi&logoColor=white" />
+  <img alt="Dashboard" src="https://img.shields.io/badge/Dashboard-React-20232A?style=for-the-badge&logo=react" />
+</p>
 
-## Visão Geral
+<p align="center">
+  Plataforma de disparo em massa multicanal com foco em produtividade para campanhas de Email, SMS e Telegram.
+</p>
 
-O Manshot permite:
+---
 
-- cadastrar e organizar contatos;
-- criar campanhas com mensagem, anexos e configurações por canal;
-- disparar campanhas de forma assíncrona (sem travar a API);
-- acompanhar status de execução (`pending`, `running`, `done`, `failed`);
-- usar credenciais de remetente por usuário para Email/SMS/Telegram.
+## Paleta Visual Manshot
 
-## Tecnologias Utilizadas
+- Laranja principal: `#FF6B00`
+- Fundo principal: `#0D1117`
+- Fundo secundario: `#131A27`
+- Texto principal: `#E5E7EB`
 
-## Backend (Python)
+## O que o Manshot faz
 
-- FastAPI: API HTTP.
-- SQLAlchemy: ORM e acesso ao banco.
-- Alembic: versionamento e migrações de schema.
-- Celery: execução assíncrona de disparos.
-- Redis: broker e backend do Celery.
-- Pydantic Settings + python-dotenv: configuração via `.env`.
-- python-jose: JWT para autenticação.
-- httpx: chamadas HTTP externas (ImgBB, Telegram e arquivos remotos).
-- vonage + vonage-sms: canal SMS atual.
-- twilio: dependência presente no projeto (legado/alternativa).
+- Organiza contatos por conta autenticada.
+- Cria campanhas multicanal com anexos e mensagem personalizada.
+- Processa disparos em background (Celery + Redis).
+- Exibe status e metricas de execucao por campanha.
+- Permite credenciais de remetente por usuario.
 
-## Frontend (Dashboard)
+## Stack Tecnologica
 
-- React 19.
-- Vite 8.
-- React Router DOM.
-- Axios.
-- Lucide React (ícones).
-- @react-oauth/google (login/importação com Google).
-- Tiptap (editor rico de mensagens).
-- Recharts (visualizações).
-- XLSX (importação de contatos por planilha).
-- TailwindCSS (dependência disponível no dashboard).
+## Backend
 
-## Infra e Dados
+![Python](https://img.shields.io/badge/Python-3.x-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688?logo=fastapi&logoColor=white)
+![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0-D71F00?logo=sqlalchemy&logoColor=white)
+![Alembic](https://img.shields.io/badge/Alembic-Migrations-222222)
+![Celery](https://img.shields.io/badge/Celery-5.3-37814A?logo=celery&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-5-DC382D?logo=redis&logoColor=white)
 
-- SQLite local (`manshot.db`) para desenvolvimento.
-- Upload híbrido:
-  - imagens via ImgBB;
-  - demais anexos em armazenamento local (`uploads/`).
+- `fastapi`, `uvicorn`
+- `sqlalchemy`, `alembic`
+- `celery`, `redis`
+- `pydantic-settings`, `python-dotenv`
+- `python-jose` para JWT
+- `httpx` para integracoes externas
+- `vonage` + `vonage-sms` para SMS
+- `twilio` presente como dependencia legada/alternativa
 
-## Arquitetura do Projeto
+## Frontend
+
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=000)
+![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
+![Router](https://img.shields.io/badge/Router-React_Router-CA4245?logo=reactrouter&logoColor=white)
+
+- `react`, `react-dom`, `react-router-dom`
+- `axios`
+- `lucide-react`
+- `@react-oauth/google`
+- `@tiptap/*` (editor rico)
+- `recharts`
+- `xlsx`
+
+## Integracoes e Canais
+
+- Email SMTP (credenciais por usuario ou fallback admin)
+- SMS via Vonage
+- Telegram Bot API
+- Upload de imagem via ImgBB
+- Upload local de arquivos em `uploads/`
+
+## Arquitetura
 
 ```text
 manshot/
   api/
-    routes/        # Endpoints (auth, contacts, campaigns)
-    models/        # Modelos SQLAlchemy
-    schemas/       # Schemas Pydantic
-    tasks.py       # Worker Celery (disparo assíncrono)
-    main.py        # Inicialização da API
-    upload.py      # Upload de arquivos
+    routes/        # auth, contacts, campaigns
+    models/        # SQLAlchemy models
+    schemas/       # validacao Pydantic
+    tasks.py       # worker Celery (disparo assíncrono)
+    upload.py      # upload e armazenamento de anexos
+    main.py        # bootstrap da API
   core/
-    auth.py        # JWT + hash de senha
-    email.py       # Canal Email (SMTP)
-    sms.py         # Canal SMS (Vonage)
-    telegram.py    # Canal Telegram Bot API
-    config.py      # Configurações via .env
+    auth.py        # JWT e password hashing
+    email.py       # canal Email
+    sms.py         # canal SMS
+    telegram.py    # canal Telegram
+    config.py      # carregamento de .env
   dashboard/
-    src/           # UI React
+    src/           # interface React
   migrations/
-    versions/      # Migrações Alembic
-  uploads/         # Arquivos locais enviados
-  manshot.db       # Banco SQLite local
+    versions/      # migrations Alembic
+  uploads/
+  manshot.db
 ```
 
-## Como o Sistema Funciona
+## Como o sistema funciona
 
-## 1) Autenticação
+1. Usuario autentica via login local ou Google.
+2. Contatos e campanhas sao persistidos por `owner_email`.
+3. Ao enviar campanha, a API muda status para `running`.
+4. A task `dispatch_campaign` entra na fila do Celery.
+5. Worker processa canal por canal para cada contato.
+6. Resultado final atualiza metricas: `total`, `success`, `failed`.
 
-- Login local por email/senha.
-- Login Google OAuth.
-- API emite JWT e protege rotas com Bearer Token.
+## Banco de dados
 
-## 2) Contatos
+- Banco atual: SQLite local
+- Arquivo: `manshot.db`
+- URL: `sqlite:///./manshot.db`
+- Migrations: Alembic
 
-- CRUD de contatos por usuário logado.
-- Importação por planilha (`.xlsx`) e Google Contacts.
-- Campo `pinned` para priorização visual.
-
-## 3) Campanhas
-
-- Criação com:
-  - mensagem;
-  - seleção de canais (Email, SMS, Telegram);
-  - assunto de email;
-  - remetente SMS;
-  - assinatura Telegram;
-  - anexos/imagem.
-- Estado de campanha atualizado no banco durante execução.
-
-## 4) Disparo Assíncrono
-
-- Endpoint de envio enfileira task no Celery.
-- Worker processa contato a contato.
-- Métricas gravadas: `total`, `success`, `failed`.
-- Logs por canal ajudam no diagnóstico de erros.
-
-## 5) Credenciais por Usuário
-
-- Cada usuário pode salvar suas próprias credenciais de envio.
-- Conta admin usa credenciais do servidor (`.env`).
-- Credenciais sensíveis retornam mascaradas no frontend.
-
-## Banco de Dados
-
-## Banco atual
-
-- SQLite local em `manshot.db`.
-- URL de conexão usada pela API: `sqlite:///./manshot.db`.
-
-## Migrações
-
-- Alembic gerencia evolução de schema.
-- O projeto inclui migrações com proteções para cenários de coluna já existente (idempotência em casos críticos).
-
-## Variáveis de Ambiente
-
-Crie um arquivo `.env` na raiz com os campos necessários para seu ambiente. Exemplo mínimo:
+## Variaveis de ambiente (exemplo minimo)
 
 ```env
-# Email SMTP padrão (admin)
+# Email SMTP padrao (admin)
 GMAIL_USER=
 GMAIL_APP_PASSWORD=
 EMAIL_FROM_NAME=Manshot
@@ -158,15 +145,9 @@ google_client_id=
 google_client_secret=
 ```
 
-## Como Rodar Localmente
+## Subir ambiente local
 
-## Pré-requisitos
-
-- Python 3.11+ (recomendado).
-- Node.js 18+.
-- Redis ativo localmente ou remoto.
-
-## 1) Backend API
+## 1) API
 
 ```bash
 cd /home/mandre/manshot
@@ -177,12 +158,10 @@ alembic upgrade head
 uvicorn api.main:app --reload
 ```
 
-API disponível em `http://127.0.0.1:8000`.
-Docs automáticas em `http://127.0.0.1:8000/docs`.
+- API: `http://127.0.0.1:8000`
+- Docs: `http://127.0.0.1:8000/docs`
 
 ## 2) Worker Celery
-
-Em outro terminal:
 
 ```bash
 cd /home/mandre/manshot
@@ -190,9 +169,7 @@ source .venv/bin/activate
 celery -A api.tasks.celery_app worker --loglevel=info
 ```
 
-## 3) Dashboard React
-
-Em outro terminal:
+## 3) Dashboard
 
 ```bash
 cd /home/mandre/manshot/dashboard
@@ -200,38 +177,18 @@ npm install
 npm run dev
 ```
 
-Dashboard em `http://localhost:5173`.
+- Dashboard: `http://localhost:5173`
 
-## Fluxo de Uso (Resumo)
+## Fluxo rapido de uso
 
-1. Faça login (local ou Google).
-2. Cadastre contatos.
-3. Configure credenciais de remetente em Credenciais.
-4. Crie campanha e selecione os canais.
-5. Dispare campanha.
-6. Acompanhe status e resultados.
+1. Login
+2. Cadastro/importacao de contatos
+3. Configuracao de credenciais em Credenciais
+4. Criacao de campanha
+5. Disparo
+6. Acompanhamento de status
 
-## Canais de Envio
-
-## Email
-
-- SMTP com credenciais do usuário ou fallback do servidor (admin).
-- Suporte a HTML e anexos.
-- Para Gmail, use App Password.
-
-## SMS
-
-- Envio via Vonage.
-- Normalização de telefone para formato internacional.
-- Personalização de remetente com regras de gateway.
-
-## Telegram
-
-- Envio via Bot API.
-- O destinatário deve iniciar o bot (`/start`) antes do primeiro envio.
-- Suporte a imagem, documento e texto com formatação.
-
-## Endpoints Principais
+## Endpoints principais
 
 ## Auth
 
@@ -265,19 +222,12 @@ Dashboard em `http://localhost:5173`.
 - `POST /upload/file`
 - `POST /upload/image`
 
-## Observações Operacionais
+## Boas praticas operacionais
 
-- Em ambiente local, o arquivo `manshot.db` muda com frequência (evite versionar dados sensíveis).
-- Segredos não devem ser commitados (`.env`, tokens, senhas de app password).
-- Se o envio falhar, verifique logs do worker Celery para identificar o canal e o erro exato.
-
-## Roadmap Sugerido
-
-- Padronizar `.env.example` com as variáveis atualmente usadas no código.
-- Opcional: migrar para PostgreSQL em produção.
-- Cobertura de testes automatizados (API + tarefas assíncronas).
-- Pipeline CI para lint/build/test.
+- Nao commitar `.env`, tokens ou app passwords.
+- Evitar versionar dados reais no `manshot.db`.
+- Usar logs do worker Celery para diagnosticar falhas de envio.
 
 ---
 
-Projeto Manshot.
+<p align="center"><strong>Manshot</strong> - Disparo inteligente com identidade propria.</p>
