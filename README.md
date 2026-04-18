@@ -41,34 +41,92 @@
 
 - `fastapi`, `uvicorn`
 - `sqlalchemy`, `alembic`
+
+# Manshot
+
+<p align="center">
+  <img alt="Manshot" src="https://img.shields.io/badge/MANSHOT-FF6B00?style=for-the-badge&labelColor=0D1117" />
+</p>
+
+<p align="center">
+  <img alt="Python" src="https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white" />
+  <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-0.111-009688?logo=fastapi&logoColor=white" />
+  <img alt="React" src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=000" />
+  <img alt="Vite" src="https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white" />
+  <img alt="Celery" src="https://img.shields.io/badge/Celery-5.3-37814A?logo=celery&logoColor=white" />
+  <img alt="Redis" src="https://img.shields.io/badge/Redis-7+-DC382D?logo=redis&logoColor=white" />
+  <img alt="License" src="https://img.shields.io/badge/license-Internal-orange" />
+  <img alt="Status" src="https://img.shields.io/badge/status-active-1F8B4C" />
+</p>
+
+<p align="center">
+  Plataforma de disparo em massa multicanal para campanhas de Email, SMS e Telegram.
+</p>
+
+---
+
+## Identidade visual
+
+- Cor principal: `#FF6B00`
+- Fundo principal: `#0D1117`
+- Fundo secundario: `#131A27`
+- Texto principal: `#E5E7EB`
+
+## Screenshots
+
+## Dashboard (hero)
+
+![Dashboard Hero](dashboard/src/assets/hero.png)
+
+## Logo
+
+![Logo Manshot](dashboard/src/assets/logo-manshot.png)
+
+## O que o Manshot faz
+
+- Gerencia contatos por conta autenticada.
+- Cria campanhas multicanal com anexos.
+- Dispara campanhas em background com Celery.
+- Atualiza metricas por campanha (`total`, `success`, `failed`).
+- Permite credenciais de remetente por usuario.
+
+## Stack tecnologica
+
+## Backend
+
+- `fastapi`, `uvicorn`
+- `sqlalchemy`, `alembic`
 - `celery`, `redis`
 - `pydantic-settings`, `python-dotenv`
-- `python-jose` para JWT
-- `httpx` para integracoes externas
-- `vonage` + `vonage-sms` para SMS
-- `twilio` presente como dependencia legada/alternativa
+- `python-jose` (JWT)
+- `httpx`
+- `vonage`, `vonage-sms`
+- `twilio` (dependencia instalada, nao ativa no fluxo atual)
 
 ## Frontend
-
-![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=000)
-![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
-![Router](https://img.shields.io/badge/Router-React_Router-CA4245?logo=reactrouter&logoColor=white)
 
 - `react`, `react-dom`, `react-router-dom`
 - `axios`
 - `lucide-react`
 - `@react-oauth/google`
-- `@tiptap/*` (editor rico)
+- `@tiptap/*`
 - `recharts`
 - `xlsx`
 
-## Integracoes e Canais
+## Banco e dados
 
-- Email SMTP (credenciais por usuario ou fallback admin)
-- SMS via Vonage
-- Telegram Bot API
-- Upload de imagem via ImgBB
-- Upload local de arquivos em `uploads/`
+- Banco local: `sqlite:///./manshot.db`
+- Arquivo: `manshot.db`
+- Migrations: Alembic
+- Upload de imagem: ImgBB
+- Upload de arquivos: pasta `uploads/`
+
+## Pre-requisitos
+
+- Python `3.11+`
+- Node.js `18+`
+- Redis `7+`
+- npm `9+` (recomendado)
 
 ## Arquitetura
 
@@ -78,40 +136,41 @@ manshot/
     routes/        # auth, contacts, campaigns
     models/        # SQLAlchemy models
     schemas/       # validacao Pydantic
-    tasks.py       # worker Celery (disparo assíncrono)
-    upload.py      # upload e armazenamento de anexos
+    tasks.py       # worker Celery
+    upload.py      # upload de anexos
     main.py        # bootstrap da API
   core/
-    auth.py        # JWT e password hashing
+    auth.py        # JWT e hash de senha
     email.py       # canal Email
     sms.py         # canal SMS
     telegram.py    # canal Telegram
     config.py      # carregamento de .env
   dashboard/
-    src/           # interface React
+    src/
   migrations/
-    versions/      # migrations Alembic
+    versions/
   uploads/
   manshot.db
 ```
 
-## Como o sistema funciona
+## Como funciona
 
-1. Usuario autentica via login local ou Google.
-2. Contatos e campanhas sao persistidos por `owner_email`.
-3. Ao enviar campanha, a API muda status para `running`.
-4. A task `dispatch_campaign` entra na fila do Celery.
-5. Worker processa canal por canal para cada contato.
-6. Resultado final atualiza metricas: `total`, `success`, `failed`.
+1. Usuario faz login local ou Google.
+2. API persiste contatos/campanhas por `owner_email`.
+3. Envio de campanha altera status para `running`.
+4. Task `dispatch_campaign` entra na fila do Celery.
+5. Worker processa contato por contato, canal por canal.
+6. Status final e metricas sao gravados no banco.
 
-## Banco de dados
+## Provedores de SMS: estado atual
 
-- Banco atual: SQLite local
-- Arquivo: `manshot.db`
-- URL: `sqlite:///./manshot.db`
-- Migrations: Alembic
+Para evitar confusao de configuracao:
 
-## Variaveis de ambiente (exemplo minimo)
+- Provedor ativo no codigo atual: `Vonage`.
+- `Twilio`: dependencia presente, nao ativa no fluxo atual desta branch.
+- `MySMSGate`: nao ativo nesta branch.
+
+Exemplo de `.env` alinhado ao estado atual:
 
 ```env
 # Email SMTP padrao (admin)
@@ -119,7 +178,7 @@ GMAIL_USER=
 GMAIL_APP_PASSWORD=
 EMAIL_FROM_NAME=Manshot
 
-# SMS (Vonage)
+# SMS ativo (Vonage)
 VONAGE_API_KEY=
 VONAGE_API_SECRET=
 VONAGE_PHONE_FROM=Manshot
@@ -127,10 +186,10 @@ VONAGE_PHONE_FROM=Manshot
 # Telegram
 TELEGRAM_BOT_TOKEN=
 
-# Redis (Celery)
+# Redis
 REDIS_URL=redis://localhost:6379/0
 
-# Upload de imagens
+# Upload
 IMGBB_API_KEY=
 
 # Auth
@@ -145,7 +204,7 @@ google_client_id=
 google_client_secret=
 ```
 
-## Subir ambiente local
+## Rodando localmente
 
 ## 1) API
 
@@ -161,7 +220,7 @@ uvicorn api.main:app --reload
 - API: `http://127.0.0.1:8000`
 - Docs: `http://127.0.0.1:8000/docs`
 
-## 2) Worker Celery
+## 2) Worker
 
 ```bash
 cd /home/mandre/manshot
@@ -179,14 +238,18 @@ npm run dev
 
 - Dashboard: `http://localhost:5173`
 
-## Fluxo rapido de uso
+## Docker (guia rapido)
 
-1. Login
-2. Cadastro/importacao de contatos
-3. Configuracao de credenciais em Credenciais
-4. Criacao de campanha
-5. Disparo
-6. Acompanhamento de status
+O repositorio ainda nao possui `Dockerfile` e `docker-compose.yml` oficiais.
+
+Enquanto isso, a forma recomendada para desenvolvimento e usar os comandos locais acima.
+
+Se voce quiser, na proxima iteracao posso gerar os arquivos oficiais de containerizacao para:
+
+- API FastAPI
+- Worker Celery
+- Redis
+- Dashboard React
 
 ## Endpoints principais
 
@@ -222,12 +285,38 @@ npm run dev
 - `POST /upload/file`
 - `POST /upload/image`
 
+## Contribuicao
+
+Contribuicoes sao bem-vindas.
+
+Fluxo sugerido:
+
+1. Crie uma branch: `git checkout -b feat/minha-feature`
+2. Rode o projeto localmente e valide mudancas.
+3. Garanta commits pequenos e descritivos.
+4. Abra PR com:
+   - contexto do problema
+   - o que foi alterado
+   - evidencias (prints/logs/testes)
+
+Padroes recomendados:
+
+- nao commitar `.env` ou segredos
+- manter compatibilidade com SQLite local
+- descrever impactos de migrations em PR
+
+## Licenca
+
+Atualmente este repositorio esta marcado como `Internal` (uso interno/equipe).
+
+Se o projeto for abrir para comunidade, recomenda-se adicionar um arquivo `LICENSE` (ex.: MIT).
+
 ## Boas praticas operacionais
 
-- Nao commitar `.env`, tokens ou app passwords.
-- Evitar versionar dados reais no `manshot.db`.
-- Usar logs do worker Celery para diagnosticar falhas de envio.
+- Nao versionar dados reais no `manshot.db`.
+- Nao commitar tokens, app passwords ou credenciais.
+- Em falhas de disparo, priorizar logs do worker Celery.
 
 ---
 
-<p align="center"><strong>Manshot</strong> - Disparo inteligente com identidade propria.</p>
+<p align="center"><strong>Manshot</strong> - Disparo inteligente com identidade visual laranja.</p>
