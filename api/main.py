@@ -134,6 +134,7 @@ app.add_middleware(
         "http://127.0.0.1:5173",
         "https://position-checklist-arrive-missions.trycloudflare.com",
     ],
+    allow_origin_regex=r"^https://([a-z0-9-]+\.)?(pages\.dev|workers\.dev)$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
