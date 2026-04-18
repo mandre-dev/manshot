@@ -274,6 +274,54 @@ Servicos e portas:
 docker compose up -d --build
 ```
 
+## Deploy com Systemd
+
+Se você quer que a API, o worker, o dashboard e o túnel subam sozinhos no boot, use os units prontos em `deploy/systemd/`.
+
+Arquivos disponíveis:
+
+- `deploy/systemd/manshot-api.service`
+- `deploy/systemd/manshot-worker.service`
+- `deploy/systemd/manshot-dashboard.service`
+- `deploy/systemd/manshot-cloudflared.service`
+
+Instalação sugerida:
+
+```bash
+cd /home/mandre/manshot/dashboard
+npm install
+npm run build
+
+sudo cp deploy/systemd/manshot-api.service /etc/systemd/system/
+sudo cp deploy/systemd/manshot-worker.service /etc/systemd/system/
+sudo cp deploy/systemd/manshot-dashboard.service /etc/systemd/system/
+sudo cp deploy/systemd/manshot-cloudflared.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable manshot-api manshot-worker manshot-dashboard manshot-cloudflared
+sudo systemctl start manshot-api manshot-worker manshot-dashboard manshot-cloudflared
+```
+
+Verificação:
+
+```bash
+systemctl status manshot-api
+systemctl status manshot-worker
+systemctl status manshot-dashboard
+systemctl status manshot-cloudflared
+journalctl -u manshot-api -f
+journalctl -u manshot-worker -f
+journalctl -u manshot-dashboard -f
+journalctl -u manshot-cloudflared -f
+```
+
+Observações:
+
+- Os serviços usam o venv do projeto em `/home/mandre/manshot/.venv`.
+- O `manshot-dashboard.service` usa o build estático em `dashboard/dist` via `vite preview`.
+- Se o usuário do Linux não for `mandre`, ajuste `User=` e `Group=` nos units.
+- O `cloudflared` expõe o dashboard na internet sem precisar manter terminal aberto.
+- Se você quiser expor a API separadamente, crie outro tunnel apontando para `http://127.0.0.1:8000`.
+
 ## Parar tudo
 
 ```bash

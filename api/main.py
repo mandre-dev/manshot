@@ -91,7 +91,7 @@ def ensure_user_is_admin_column() -> None:
 
 def create_admin_user() -> None:
     from api.models import User
-    from api.core.auth import hash_password
+    from core.auth import hash_password
     from core.config import settings
 
     db = SessionLocal()
@@ -100,7 +100,7 @@ def create_admin_user() -> None:
         if not admin:
             admin = User(
                 email=settings.ADMIN_EMAIL,
-                password_hash=get_password_hash(settings.ADMIN_PASSWORD),
+                password_hash=hash_password(settings.ADMIN_PASSWORD),
                 is_admin=True,
             )
             db.add(admin)
@@ -129,7 +129,11 @@ app = FastAPI(
 # CORS — permite o dashboard React fazer requisições para a API
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "https://position-checklist-arrive-missions.trycloudflare.com",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

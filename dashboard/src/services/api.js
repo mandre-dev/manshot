@@ -192,8 +192,10 @@ export function clearStoredAccounts() {
   localStorage.removeItem(ACCOUNT_SESSIONS_KEY)
 }
 
+const apiBaseUrl = (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000').replace(/\/+$/, '')
+
 const api = axios.create({
-  baseURL: 'http://127.0.0.1:8000',
+  baseURL: apiBaseUrl,
   headers: { 'Content-Type': 'application/json' },
 })
 
