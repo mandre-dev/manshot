@@ -187,14 +187,14 @@ VONAGE_PHONE_FROM=Manshot
 TELEGRAM_BOT_TOKEN=
 
 # Redis
-REDIS_URL=redis://localhost:6379/0
+REDIS_URL=redis://localhost:xxxx/x
 
 # Upload
 IMGBB_API_KEY=
 
 # Auth
-ADMIN_EMAIL=admin@manshot.local
-ADMIN_PASSWORD=admin123
+ADMIN_EMAIL=admin@xxxx.xxxx
+ADMIN_PASSWORD=xxxxx
 JWT_SECRET_KEY=change-this-secret-key
 JWT_ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=60
@@ -223,7 +223,7 @@ uvicorn api.main:app --reload
 ## 2) Worker
 
 ```bash
-cd /home/mandre/manshot
+cd /home/manshot
 source .venv/bin/activate
 celery -A api.tasks.celery_app worker --loglevel=info
 ```
@@ -231,7 +231,7 @@ celery -A api.tasks.celery_app worker --loglevel=info
 ## 3) Dashboard
 
 ```bash
-cd /home/mandre/manshot/dashboard
+cd /home/manshot/dashboard
 npm install
 npm run dev
 ```
