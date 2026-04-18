@@ -257,7 +257,7 @@ Arquivos usados:
 ## Subir com Docker
 
 ```bash
-cd /home/mandre/manshot
+cd /home/manshot
 docker compose up --build
 ```
 
