@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import inspect, text
-from api.database import engine, Base
+from api.database import engine, Base, SessionLocal
 from api.routes import contacts_router, campaigns_router, auth_router
 from api.upload import router as upload_router
 
@@ -72,11 +72,35 @@ def ensure_user_sender_credential_columns() -> None:
                 )
 
 
+def create_admin_user() -> None:
+    from api.models import User
+    from api.core.auth import get_password_hash
+    from api.core.config import settings
+
+    db = SessionLocal()
+    try:
+        admin = db.query(User).filter(User.email == settings.ADMIN_EMAIL).first()
+        if not admin:
+            admin = User(
+                email=settings.ADMIN_EMAIL,
+                hashed_password=get_password_hash(settings.ADMIN_PASSWORD),
+                is_admin=True,
+            )
+            db.add(admin)
+            db.commit()
+            print(f"✅ Admin criado: {settings.ADMIN_EMAIL}")
+        else:
+            print(f"ℹ️ Admin já existe: {settings.ADMIN_EMAIL}")
+    finally:
+        db.close()
+
+
 # Cria as tabelas no banco de dados automaticamente
 Base.metadata.create_all(bind=engine)
 ensure_campaign_attachments_column()
 ensure_contact_pinned_column()
 ensure_user_sender_credential_columns()
+create_admin_user()
 
 app = FastAPI(
     title="Manshot API",
