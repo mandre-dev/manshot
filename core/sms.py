@@ -74,13 +74,17 @@ class SMSChannel(BaseChannel):
         Nome exibido no corpo do SMS (fallback visual).
         Preserva acentos para aparecer como digitado no Manshot.
         """
+        visual_fallback = (fallback_sender_id or "Manshot").strip() or "Manshot"
         raw = unicodedata.normalize("NFC", (sender or "").strip())
         if not raw:
-            return fallback_sender_id
+            return visual_fallback
 
         # Remove apenas colchetes para manter o prefixo [NOME] consistente.
         clean = raw.replace("[", "").replace("]", "")
-        return clean[:30]
+        cleaned = clean.strip()
+        if not cleaned:
+            return visual_fallback
+        return cleaned[:30]
 
     def send(
         self,
@@ -133,13 +137,13 @@ class SMSChannel(BaseChannel):
                 )
             display_sender = self._normalize_display_sender(sender_raw, sender_id)
 
-            personalized_message = plain_message.format(name=contact.name)
+            body_message = plain_message.format(name=contact.name).strip()
             # Sempre inclui o remetente entre colchetes no corpo do SMS.
+            # Se nao houver mensagem, envia somente o prefixo.
             sender_prefix = f"[{display_sender}]"
-            if personalized_message:
-                personalized_message = f"{sender_prefix} {personalized_message}"
-            else:
-                personalized_message = sender_prefix
+            personalized_message = (
+                f"{sender_prefix}\n{body_message}" if body_message else sender_prefix
+            )
 
             # Adiciona o link da imagem no SMS se houver
             if image_url:
