@@ -31,7 +31,9 @@ results = sms.send_bulk(sms_contacts, message)
 for r in results:
     if not r.success:
         print(f"Erro: {r.error}")
-print(sms.summary(results))# --- Disparo via Telegram ---
+print(sms.summary(results))
+
+# --- Disparo via Telegram ---
 # (ajuste os destinations para chat_ids do Telegram)
 tg_contacts = [Contact(name="Mandré", destination="1628215092")]
 print("\n=== Disparando Telegram ===")
