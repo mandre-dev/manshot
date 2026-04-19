@@ -14,7 +14,7 @@ contacts = [
 ]
 
 # --- Mensagem com personalização ---
-message = "Olá, {name}! Essa é uma mensagem enviada pelo Manshott 🚀"
+message = "Olá, {name}! Essa é uma mensagem enviada pelo Manshot 🚀"
 
 # --- Disparo via Email ---
 print("=== Disparando emails ===")

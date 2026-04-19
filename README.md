@@ -1,0 +1,626 @@
+# Manshot
+
+<p align="center">
+  <img alt="Manshot" src="https://img.shields.io/badge/MANSHOT-FF6B00?style=for-the-badge&labelColor=0D1117" />
+  <img alt="API" src="https://img.shields.io/badge/API-FastAPI-05998B?style=for-the-badge&logo=fastapi&logoColor=white" />
+  <img alt="Dashboard" src="https://img.shields.io/badge/Dashboard-React-20232A?style=for-the-badge&logo=react" />
+  <img alt="Worker" src="https://img.shields.io/badge/Worker-Celery-37814A?style=for-the-badge&logo=celery&logoColor=white" />
+</p>
+
+<p align="center">
+  Plataforma de disparo em massa multicanal para campanhas de Email, SMS e Telegram.
+</p>
+
+---
+
+## O que o Manshot faz
+
+- Gerencia contatos por conta autenticada.
+- Cria campanhas multicanal com anexos.
+- Processa disparos em background com Celery + Redis.
+- Exibe status e metricas por campanha (`pending`, `running`, `done`, `failed`).
+- Permite credenciais de remetente por usuario.
+
+## Stack
+
+### Backend
+
+- Python 3.11+
+- FastAPI
+- SQLAlchemy + Alembic
+- Celery + Redis
+- Pydantic Settings
+- Vonage SMS
+
+### Frontend
+
+- React 19
+- Vite 8
+- React Router
+- Axios
+- TipTap (editor)
+- Recharts
+
+## Estrutura do projeto
+
+```text
+manshot/
+  api/
+    routes/
+    models/
+    schemas/
+    main.py
+    tasks.py
+    upload.py
+  core/
+    auth.py
+    config.py
+    email.py
+    sms.py
+    telegram.py
+  dashboard/
+    src/
+      components/
+        campaigns/
+          CampaignDropdownMenu.jsx
+          ChannelCheckbox.jsx
+          SendingModal.jsx
+          StatusPill.jsx
+          attachmentUtils.js
+        navbar/
+          navLinks.js
+          profilePrefs.js
+      pages/
+  migrations/
+    versions/
+  deploy/
+    systemd/
+  uploads/
+    .gitkeep
+```
+
+## Execucao local
+
+### 1) API
+
+```bash
+cd /home/mandre/manshot
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+alembic upgrade head
+uvicorn api.main:app --reload
+```
+
+- API: `http://127.0.0.1:8000`
+- Docs: `http://127.0.0.1:8000/docs`
+
+### 2) Worker
+
+```bash
+cd /home/mandre/manshot
+source .venv/bin/activate
+celery -A api.tasks.celery_app worker --loglevel=info
+```
+
+### 3) Dashboard
+
+```bash
+cd /home/mandre/manshot/dashboard
+npm install
+npm run dev
+```
+
+- Dashboard: `http://localhost:5173`
+
+## CI/CD (GitHub Actions)
+
+Workflow: `.github/workflows/ci-cd.yml`
+
+O pipeline executa:
+
+- Backend CI:
+  - instala dependencias Python
+  - valida imports/sintaxe
+- Frontend CI:
+  - instala dependencias do dashboard
+  - gera build de producao
+- Deploy Render (apos CI passar):
+  - dispara hook do backend
+  - dispara hook do dashboard
+
+### Gatilhos
+
+- `pull_request` para `main`
+- `push` em `main`
+
+### Secrets necessarios
+
+Configure no GitHub em `Settings > Secrets and variables > Actions`:
+
+- `RENDER_DEPLOY_HOOK_BACKEND`
+- `RENDER_DEPLOY_HOOK_DASHBOARD`
+
+Observacao:
+
+- Se apenas backend estiver no Render, mantenha o hook de backend configurado.
+- O workflow valida se ao menos um hook existe.
+
+## Deploy com systemd
+
+Unidades prontas em `deploy/systemd/`:
+
+- `manshot-api.service`
+- `manshot-worker.service`
+- `manshot-dashboard.service`
+- `manshot-cloudflared.service`
+
+Instalacao (exemplo):
+
+```bash
+sudo cp deploy/systemd/*.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable manshot-api manshot-worker manshot-dashboard manshot-cloudflared
+sudo systemctl start manshot-api manshot-worker manshot-dashboard manshot-cloudflared
+```
+
+## Boas praticas de repositorio
+
+Mudancas recentes de organizacao aplicadas:
+
+- Remocao de artefatos sensiveis/versionamento indevido (`manshot.db`, uploads reais, notas locais).
+- Padronizacao de `.gitignore` para bloquear:
+  - `.env` e variantes locais
+  - bancos locais (`*.db`, `*.sqlite*`)
+  - `dashboard/node_modules` e `dashboard/dist`
+  - arquivos locais acidentais
+- Pasta `uploads/` mantida com `.gitkeep`.
+
+## Endpoints principais
+
+### Auth
+
+- `POST /auth/login`
+- `POST /auth/register`
+- `POST /auth/google`
+- `GET /auth/me`
+- `GET /auth/me/sender-credentials`
+- `PATCH /auth/me/sender-credentials`
+
+### Contatos
+
+- `POST /contacts/`
+- `GET /contacts/`
+- `PUT /contacts/{contact_id}`
+- `DELETE /contacts/{contact_id}`
+- `POST /contacts/{contact_id}/pin`
+
+### Campanhas
+
+- `POST /campaigns/`
+- `GET /campaigns/`
+- `PUT /campaigns/{campaign_id}`
+- `DELETE /campaigns/{campaign_id}`
+- `POST /campaigns/{campaign_id}/send`
+- `POST /campaigns/{campaign_id}/reset`
+- `POST /campaigns/{campaign_id}/pin`
+
+### Upload
+
+- `POST /upload/file`
+- `POST /upload/image`
+
+## Licenca
+
+Repositorio de uso interno/equipe.
+
+---
+
+<p align="center"><strong>Manshot</strong> - Disparo inteligente com identidade visual laranja.</p>
+# Manshot
+
+<p align="center">
+  <img alt="Manshot" src="https://img.shields.io/badge/MANSHOT-FF6B00?style=for-the-badge&labelColor=0D1117" />
+  <img alt="Status" src="https://img.shields.io/badge/Status-Online-1F8B4C?style=for-the-badge" />
+  <img alt="API" src="https://img.shields.io/badge/API-FastAPI-05998B?style=for-the-badge&logo=fastapi&logoColor=white" />
+  <img alt="Dashboard" src="https://img.shields.io/badge/Dashboard-React-20232A?style=for-the-badge&logo=react" />
+</p>
+
+<p align="center">
+  Plataforma de disparo em massa multicanal com foco em produtividade para campanhas de Email, SMS e Telegram.
+</p>
+
+---
+
+## Paleta Visual Manshot
+
+- Laranja principal: `#FF6B00`
+- Fundo principal: `#0D1117`
+- Fundo secundario: `#131A27`
+- Texto principal: `#E5E7EB`
+
+## O que o Manshot faz
+
+- Organiza contatos por conta autenticada.
+- Cria campanhas multicanal com anexos e mensagem personalizada.
+- Processa disparos em background (Celery + Redis).
+- Exibe status e metricas de execucao por campanha.
+- Permite credenciais de remetente por usuario.
+
+## Stack Tecnologica
+
+## Backend
+
+![Python](https://img.shields.io/badge/Python-3.x-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688?logo=fastapi&logoColor=white)
+![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0-D71F00?logo=sqlalchemy&logoColor=white)
+![Alembic](https://img.shields.io/badge/Alembic-Migrations-222222)
+![Celery](https://img.shields.io/badge/Celery-5.3-37814A?logo=celery&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-5-DC382D?logo=redis&logoColor=white)
+
+- `fastapi`, `uvicorn`
+- `sqlalchemy`, `alembic`
+
+# Manshot
+
+<p align="center">
+  <img alt="Manshot" src="https://img.shields.io/badge/MANSHOT-FF6B00?style=for-the-badge&labelColor=0D1117" />
+</p>
+
+<p align="center">
+  <img alt="Python" src="https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white" />
+  <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-0.111-009688?logo=fastapi&logoColor=white" />
+  <img alt="React" src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=000" />
+  <img alt="Vite" src="https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white" />
+  <img alt="Celery" src="https://img.shields.io/badge/Celery-5.3-37814A?logo=celery&logoColor=white" />
+  <img alt="Redis" src="https://img.shields.io/badge/Redis-7+-DC382D?logo=redis&logoColor=white" />
+  <img alt="License" src="https://img.shields.io/badge/license-Internal-orange" />
+  <img alt="Status" src="https://img.shields.io/badge/status-active-1F8B4C" />
+</p>
+
+<p align="center">
+  Plataforma de disparo em massa multicanal para campanhas de Email, SMS e Telegram.
+</p>
+
+---
+
+## Identidade visual
+
+- Cor principal: `#FF6B00`
+- Fundo principal: `#0D1117`
+- Fundo secundario: `#131A27`
+- Texto principal: `#E5E7EB`
+
+## Screenshots
+
+## Dashboard (hero)
+
+![Dashboard Hero](dashboard/src/assets/hero.png)
+
+## Logo
+
+![Logo Manshot](dashboard/src/assets/logo-manshot.png)
+
+## O que o Manshot faz
+
+- Gerencia contatos por conta autenticada.
+- Cria campanhas multicanal com anexos.
+- Dispara campanhas em background com Celery.
+- Atualiza metricas por campanha (`total`, `success`, `failed`).
+- Permite credenciais de remetente por usuario.
+
+## Stack tecnologica
+
+## Backend
+
+- `fastapi`, `uvicorn`
+- `sqlalchemy`, `alembic`
+- `celery`, `redis`
+- `pydantic-settings`, `python-dotenv`
+- `python-jose` (JWT)
+- `httpx`
+- `vonage`, `vonage-sms`
+- `twilio` (dependencia instalada, nao ativa no fluxo atual)
+
+## Frontend
+
+- `react`, `react-dom`, `react-router-dom`
+- `axios`
+- `lucide-react`
+- `@react-oauth/google`
+- `@tiptap/*`
+- `recharts`
+- `xlsx`
+
+## Banco e dados
+
+- Banco local: `sqlite:///./manshot.db`
+- Arquivo: `manshot.db`
+- Migrations: Alembic
+- Upload de imagem: ImgBB
+- Upload de arquivos: pasta `uploads/`
+
+## Pre-requisitos
+
+- Python `3.11+`
+- Node.js `18+`
+- Redis `7+`
+- npm `9+` (recomendado)
+- Docker + Docker Compose (opcional, recomendado para ambiente padronizado)
+
+## Arquitetura
+
+```text
+manshot/
+  api/
+    routes/        # auth, contacts, campaigns
+    models/        # SQLAlchemy models
+    schemas/       # validacao Pydantic
+    tasks.py       # worker Celery
+    upload.py      # upload de anexos
+    main.py        # bootstrap da API
+  core/
+    auth.py        # JWT e hash de senha
+    email.py       # canal Email
+    sms.py         # canal SMS
+    telegram.py    # canal Telegram
+    config.py      # carregamento de .env
+  dashboard/
+    src/
+  migrations/
+    versions/
+  uploads/
+  manshot.db
+```
+
+## Como funciona
+
+1. Usuario faz login local ou Google.
+2. API persiste contatos/campanhas por `owner_email`.
+3. Envio de campanha altera status para `running`.
+4. Task `dispatch_campaign` entra na fila do Celery.
+5. Worker processa contato por contato, canal por canal.
+6. Status final e metricas sao gravados no banco.
+
+## Provedores de SMS: estado atual
+
+Para evitar confusao de configuracao:
+
+- Provedor ativo no codigo atual: `Vonage`.
+- `Twilio`: dependencia presente, nao ativa no fluxo atual desta branch.
+- `MySMSGate`: nao ativo nesta branch.
+
+Exemplo de `.env` alinhado ao estado atual:
+
+```env
+# Email SMTP padrao (admin)
+GMAIL_USER=
+GMAIL_APP_PASSWORD=
+EMAIL_FROM_NAME=Manshot
+
+# SMS ativo (Vonage)
+VONAGE_API_KEY=
+VONAGE_API_SECRET=
+VONAGE_PHONE_FROM=Manshot
+
+# Telegram
+TELEGRAM_BOT_TOKEN=
+
+# Redis
+REDIS_URL=redis://localhost:xxxx/x
+
+# Upload
+IMGBB_API_KEY=
+
+# Auth
+ADMIN_EMAIL=admin@xxxx.xxxx
+ADMIN_PASSWORD=xxxxx
+JWT_SECRET_KEY=change-this-secret-key
+JWT_ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=60
+
+# Google OAuth
+google_client_id=
+google_client_secret=
+```
+
+## Rodando localmente
+
+## 1) API
+
+```bash
+cd /home/manshot
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+alembic upgrade head
+uvicorn api.main:app --reload
+```
+
+- API: `http://127.0.0.1:8000`
+- Docs: `http://127.0.0.1:8000/docs`
+
+## 2) Worker
+
+```bash
+cd /home/manshot
+source .venv/bin/activate
+celery -A api.tasks.celery_app worker --loglevel=info
+```
+
+## 3) Dashboard
+
+```bash
+cd /home/manshot/dashboard
+npm install
+npm run dev
+```
+
+- Dashboard: `http://localhost:5173`
+
+## Docker (guia rapido)
+
+O projeto ja possui containerizacao para os servicos principais:
+
+- `api` (FastAPI)
+- `worker` (Celery)
+- `redis` (broker/backend)
+- `dashboard` (Vite)
+
+Arquivos usados:
+
+- `docker-compose.yml`
+- `Dockerfile.backend`
+- `dashboard/Dockerfile`
+
+## Subir com Docker
+
+```bash
+cd /home/manshot
+docker compose up --build
+```
+
+Servicos e portas:
+
+- API: `http://127.0.0.1:8000`
+- Docs: `http://127.0.0.1:8000/docs`
+- Dashboard: `http://localhost:5173`
+- Redis: `localhost:6379`
+
+## Rodar em background
+
+```bash
+docker compose up -d --build
+```
+
+## Deploy com Systemd
+
+Se você quer que a API, o worker, o dashboard e o túnel subam sozinhos no boot, use os units prontos em `deploy/systemd/`.
+
+Arquivos disponíveis:
+
+- `deploy/systemd/manshot-api.service`
+- `deploy/systemd/manshot-worker.service`
+- `deploy/systemd/manshot-dashboard.service`
+- `deploy/systemd/manshot-cloudflared.service`
+
+Instalação sugerida:
+
+```bash
+cd /home/mandre/manshot/dashboard
+npm install
+npm run build
+
+sudo cp deploy/systemd/manshot-api.service /etc/systemd/system/
+sudo cp deploy/systemd/manshot-worker.service /etc/systemd/system/
+sudo cp deploy/systemd/manshot-dashboard.service /etc/systemd/system/
+sudo cp deploy/systemd/manshot-cloudflared.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable manshot-api manshot-worker manshot-dashboard manshot-cloudflared
+sudo systemctl start manshot-api manshot-worker manshot-dashboard manshot-cloudflared
+```
+
+Verificação:
+
+```bash
+systemctl status manshot-api
+systemctl status manshot-worker
+systemctl status manshot-dashboard
+systemctl status manshot-cloudflared
+journalctl -u manshot-api -f
+journalctl -u manshot-worker -f
+journalctl -u manshot-dashboard -f
+journalctl -u manshot-cloudflared -f
+```
+
+Observações:
+
+- Os serviços usam o venv do projeto em `/home/mandre/manshot/.venv`.
+- O `manshot-dashboard.service` usa o build estático em `dashboard/dist` via `vite preview`.
+- Se o usuário do Linux não for `mandre`, ajuste `User=` e `Group=` nos units.
+- O `cloudflared` expõe o dashboard na internet sem precisar manter terminal aberto.
+- Se você quiser expor a API separadamente, crie outro tunnel apontando para `http://127.0.0.1:8000`.
+
+## Parar tudo
+
+```bash
+docker compose down
+```
+
+## Ver logs
+
+```bash
+docker compose logs -f api
+docker compose logs -f worker
+docker compose logs -f dashboard
+```
+
+## Endpoints principais
+
+## Auth
+
+- `POST /auth/login`
+- `POST /auth/register`
+- `POST /auth/google`
+- `GET /auth/me`
+- `GET /auth/me/sender-credentials`
+- `PATCH /auth/me/sender-credentials`
+
+## Contatos
+
+- `POST /contacts/`
+- `GET /contacts/`
+- `PUT /contacts/{contact_id}`
+- `DELETE /contacts/{contact_id}`
+- `POST /contacts/{contact_id}/pin`
+
+## Campanhas
+
+- `POST /campaigns/`
+- `GET /campaigns/`
+- `PUT /campaigns/{campaign_id}`
+- `DELETE /campaigns/{campaign_id}`
+- `POST /campaigns/{campaign_id}/send`
+- `POST /campaigns/{campaign_id}/reset`
+- `POST /campaigns/{campaign_id}/pin`
+
+## Upload
+
+- `POST /upload/file`
+- `POST /upload/image`
+
+## Contribuicao
+
+Contribuicoes sao bem-vindas.
+
+Fluxo sugerido:
+
+1. Crie uma branch: `git checkout -b feat/minha-feature`
+2. Rode o projeto localmente e valide mudancas.
+3. Garanta commits pequenos e descritivos.
+4. Abra PR com:
+   - contexto do problema
+   - o que foi alterado
+   - evidencias (prints/logs/testes)
+
+Padroes recomendados:
+
+- nao commitar `.env` ou segredos
+- manter compatibilidade com SQLite local
+- descrever impactos de migrations em PR
+
+## Licenca
+
+Atualmente este repositorio esta marcado como `Internal` (uso interno/equipe).
+
+Se o projeto for abrir para comunidade, recomenda-se adicionar um arquivo `LICENSE` (ex.: MIT).
+
+## Boas praticas operacionais
+
+- Nao versionar dados reais no `manshot.db`.
+- Nao commitar tokens, app passwords ou credenciais.
+- Em falhas de disparo, priorizar logs do worker Celery.
+
+---
+
+<p align="center"><strong>Manshot</strong> - Disparo inteligente com identidade visual laranja.</p>
