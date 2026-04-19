@@ -43,8 +43,8 @@
 - Gerencia contatos por conta autenticada.
 - Cria campanhas multicanal com anexos.
 - Dispara campanhas em background com Celery.
-- Atualiza metricas por campanha (`total`, `success`, `failed`).
-- Permite credenciais de remetente por usuario.
+- Atualiza métricas por campanha (`total`, `success`, `failed`).
+- Permite credenciais de remetente por usuário.
 
 ## Stack tecnologica
 
@@ -57,7 +57,7 @@
 - `python-jose` (JWT)
 - `httpx`
 - `vonage`, `vonage-sms`
-- `twilio` (dependencia instalada, nao ativa no fluxo atual)
+- `twilio` (dependência instalada, nao ativa no fluxo atual)
 
 ## Frontend
 
@@ -117,15 +117,15 @@ manshot/
 3. Envio de campanha altera status para `running`.
 4. Task `dispatch_campaign` entra na fila do Celery.
 5. Worker processa contato por contato, canal por canal.
-6. Status final e metricas sao gravados no banco.
+6. Status final e métricas sao gravados no banco.
 
 ## Provedores de SMS: estado atual
 
-Para evitar confusao de configuracao:
+Para evitar confusão de configuração:
 
 - Provedor ativo no codigo atual: `Vonage`.
-- `Twilio`: dependencia presente, nao ativa no fluxo atual desta branch.
-- `MySMSGate`: nao ativo nesta branch.
+- `Twilio`: dependência presente, não ativa no fluxo atual desta branch.
+- `MySMSGate`: não ativo nesta branch.
 
 Exemplo de `.env` alinhado ao estado atual:
 
@@ -197,7 +197,7 @@ npm run dev
 
 ## Docker (guia rapido)
 
-O projeto ja possui containerizacao para os servicos principais:
+O projeto já possui containerização para os serviços principais:
 
 - `api` (FastAPI)
 - `worker` (Celery)
@@ -326,7 +326,7 @@ docker compose logs -f dashboard
 - `POST /upload/file`
 - `POST /upload/image`
 
-## Contribuicao
+## Contribuição
 
 Contribuicoes sao bem-vindas.
 
@@ -340,22 +340,22 @@ Fluxo sugerido:
    - o que foi alterado
    - evidencias (prints/logs/testes)
 
-Padroes recomendados:
+Padrões recomendados:
 
-- nao commitar `.env` ou segredos
+- não commitar `.env` ou segredos
 - manter compatibilidade com SQLite local
 - descrever impactos de migrations em PR
 
-## Licenca
+## Licença
 
-Atualmente este repositorio esta marcado como `Internal` (uso interno/equipe).
+Atualmente este repositório está marcado como `Internal` (uso interno/equipe).
 
 Se o projeto for abrir para comunidade, recomenda-se adicionar um arquivo `LICENSE` (ex.: MIT).
 
-## Boas praticas operacionais
+## Boas práticas operacionais
 
-- Nao versionar dados reais no `manshot.db`.
-- Nao commitar tokens, app passwords ou credenciais.
+- Não versionar dados reais no `manshot.db`.
+- Não commitar tokens, app passwords ou credenciais.
 - Em falhas de disparo, priorizar logs do worker Celery.
 
 ---
