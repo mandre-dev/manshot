@@ -12,7 +12,7 @@ from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.image import MIMEImage
 from email.mime.text import MIMEText
-from email.utils import parseaddr
+from email.utils import formataddr, parseaddr
 from pathlib import Path
 import re
 from urllib.parse import urlparse
@@ -206,7 +206,7 @@ class EmailChannel(BaseChannel):
 
             msg = MIMEMultipart("mixed")
             msg["Subject"] = subject or f"Mensagem de {effective_from_name}"
-            msg["From"] = effective_from_name
+            msg["From"] = formataddr((effective_from_name, effective_smtp_user))
             msg["Reply-To"] = effective_smtp_user
             msg["To"] = contact.destination
 
