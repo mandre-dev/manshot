@@ -7,6 +7,7 @@ from sqlalchemy import inspect, text
 from api.database import engine, Base
 from api.routes import contacts_router, campaigns_router, auth_router
 from api.upload import router as upload_router
+from core.config import settings
 
 UPLOADS_DIR = Path(__file__).resolve().parents[1] / "uploads"
 
@@ -84,10 +85,25 @@ app = FastAPI(
     version="1.0.0",
 )
 
+
+def build_cors_origins() -> list[str]:
+    default_origins = ["http://localhost:5173", "http://127.0.0.1:5173"]
+    extra_origins = [
+        origin.strip().rstrip("/")
+        for origin in settings.CORS_ALLOW_ORIGINS.split(",")
+        if origin.strip()
+    ]
+
+    # dict.fromkeys preserves order while removing duplicates
+    return list(dict.fromkeys(default_origins + extra_origins))
+
+
+cors_origins = build_cors_origins()
+
 # CORS — permite o dashboard React fazer requisições para a API
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

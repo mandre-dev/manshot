@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
 import { useGoogleLogin } from '@react-oauth/google'
-import { checkCredentials, getMe, googleLogin, login, rememberAccount, register, saveToken, setAuthProvider } from '../services/api'
+import { checkCredentials, getApiConfigErrorMessage, getMe, googleLogin, login, rememberAccount, register, saveToken, setAuthProvider } from '../services/api'
 
 function GoogleMark() {
   return (
@@ -158,6 +158,12 @@ export default function Login() {
     setError('')
     setHasInvalidCredentials(false)
 
+    const apiConfigError = getApiConfigErrorMessage()
+    if (apiConfigError) {
+      setError(apiConfigError)
+      return
+    }
+
     if (isRegisterMode && form.password !== confirmPassword) {
       setError('As senhas não conferem')
       return
@@ -177,6 +183,8 @@ export default function Login() {
       const apiMessage = err?.response?.data?.detail
       if (typeof apiMessage === 'string' && apiMessage.trim()) {
         setError(apiMessage)
+      } else if (!err?.response) {
+        setError('Não foi possível conectar na API. Verifique VITE_API_URL no deploy.')
       } else {
         setError(isRegisterMode ? 'Não foi possível criar sua conta' : 'E-mail ou senha inválidos')
       }

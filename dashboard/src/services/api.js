@@ -192,7 +192,24 @@ export function clearStoredAccounts() {
   localStorage.removeItem(ACCOUNT_SESSIONS_KEY)
 }
 
-const apiBaseUrl = (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000').replace(/\/+$/, '')
+function resolveApiBaseUrl() {
+  const envApiUrl = (import.meta.env.VITE_API_URL || '').trim()
+  if (envApiUrl) {
+    return envApiUrl.replace(/\/+$/, '')
+  }
+
+  const isLocalhost = typeof window !== 'undefined'
+    && ['localhost', '127.0.0.1'].includes(window.location.hostname)
+
+  if (isLocalhost) {
+    return 'http://127.0.0.1:8000'
+  }
+
+  // In production, missing VITE_API_URL should fail loudly instead of calling localhost.
+  return ''
+}
+
+const apiBaseUrl = resolveApiBaseUrl()
 
 const api = axios.create({
   baseURL: apiBaseUrl,
@@ -238,6 +255,13 @@ export const getMe = () => api.get('/auth/me')
 export const googleLogin = (accessToken) => api.post('/auth/google', { access_token: accessToken })
 export const deleteMyAccount = () => api.delete('/auth/me')
 export const getSenderCredentials = () => api.get('/auth/me/sender-credentials')
+
+export function getApiConfigErrorMessage() {
+  if (apiBaseUrl) {
+    return ''
+  }
+  return 'API não configurada no dashboard. Defina VITE_API_URL no deploy.'
+}
 export const patchSenderCredentials = (data) => api.patch('/auth/me/sender-credentials', data)
 
 // ── Contatos ────────────────────────────────────────
