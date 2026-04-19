@@ -1,9 +1,14 @@
 // Campaigns.jsx — Manshot Orange Theme + Image Upload + Menu
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { getCampaigns, createCampaign, updateCampaign, deleteCampaign, pinCampaign, resetCampaignStatus, sendCampaign, uploadAttachment, getContacts } from '../services/api'
-import { Mail, MessageSquare, Send, CheckCircle, X, Paperclip, Pin } from 'lucide-react'
+import { Mail, MessageSquare, Send, X, Paperclip, Pin } from 'lucide-react'
 import RichEditor from '../components/RichEditor'
+import StatusPill from '../components/campaigns/StatusPill'
+import ChannelCheckbox from '../components/campaigns/ChannelCheckbox'
+import CampaignDropdownMenu from '../components/campaigns/CampaignDropdownMenu'
+import SendingModal from '../components/campaigns/SendingModal'
+import { getAttachmentKind, normalizeCampaignAttachments, normalizeUploadedAttachment } from '../components/campaigns/attachmentUtils'
 
 
 const inputStyle = {
@@ -17,47 +22,6 @@ const inputStyle = {
   width: '100%',
   fontFamily: "'Space Mono', monospace",
 }
-
-const StatusPill = ({ status }) => {
-  const colors = {
-    done: { bg: '#064e3b', color: '#10b981' },
-    running: { bg: '#2a1a0a', color: '#FF8C00' },
-    failed: { bg: '#4c1d24', color: '#f87171' },
-    pending: { bg: '#1f2937', color: '#9ca3af' },
-  }
-  const s = colors[status] || colors.pending
-  return (
-    <span style={{
-      background: s.bg, color: s.color,
-      fontSize: '10px', padding: '2px 8px',
-      borderRadius: '20px', fontWeight: '500'
-    }}>{status}</span>
-  )
-}
-
-const icons = {
-  email: <Mail size={14} color="#FF6B00" />,
-  sms: <MessageSquare size={14} color="#FF6B00" />,
-  telegram: <Send size={14} color="#FF6B00" />,
-}
-
-const CheckBox = ({ label, checked, onChange, icon }) => (
-  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-    <div onClick={onChange} style={{
-      width: '24px', height: '24px', borderRadius: '6px',
-      background: checked ? '#FF6B00' : 'transparent',
-      border: `2px solid ${checked ? '#FF6B00' : '#FF6B0066'}`,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: '13px', color: '#fff', cursor: 'pointer', transition: 'all 0.2s',
-    }}>
-      {checked ? '✓' : ''}
-    </div>
-    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-      {icons[icon]}
-      <span style={{ color: '#9ca3af', fontSize: '13px', fontFamily: "'Space Mono', monospace" }}>{label}</span>
-    </div>
-  </label>
-)
 
 function formatDuration(seconds) {
   const safeSeconds = Math.max(0, Math.round(Number(seconds) || 0))
@@ -73,224 +37,6 @@ function formatDuration(seconds) {
   }
 
   return `${minutes}m ${remainingSeconds}s`
-}
-
-const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg']
-
-function isImageUrl(url) {
-  if (!url) return false
-  const lower = url.split('?')[0].toLowerCase()
-  return IMAGE_EXTENSIONS.some(ext => lower.endsWith(ext))
-}
-
-function getFileNameFromUrl(url) {
-  if (!url) return 'arquivo'
-  const clean = url.split('?')[0]
-  const parts = clean.split('/')
-  const rawName = decodeURIComponent(parts[parts.length - 1] || 'arquivo')
-
-  // Remove technical prefixes used in storage names, keeping only the original filename.
-  // Examples:
-  // - 6612023b_MeuArquivo.pdf -> MeuArquivo.pdf
-  // - aacf721416144db3a330cc7a413bd660.docx (legacy) -> arquivo.docx
-  const withoutShortPrefix = rawName.replace(/^[0-9a-f]{8}_/i, '')
-  const legacyHashOnlyMatch = withoutShortPrefix.match(/^([0-9a-f]{32})(\.[^.]+)$/i)
-  if (legacyHashOnlyMatch) {
-    return `arquivo${legacyHashOnlyMatch[2]}`
-  }
-
-  return withoutShortPrefix || 'arquivo'
-}
-
-function getAttachmentKind(attachment) {
-  if (!attachment) return 'file'
-  if (attachment.kind === 'image' || attachment.kind === 'file') return attachment.kind
-  return isImageUrl(attachment.url) ? 'image' : 'file'
-}
-
-function normalizeCampaignAttachments(campaign) {
-  const attachments = Array.isArray(campaign?.attachments) ? campaign.attachments : []
-  if (attachments.length > 0) {
-    return attachments
-      .filter((attachment) => attachment?.url)
-      .map((attachment) => ({
-        url: attachment.url,
-        filename: attachment.filename || getFileNameFromUrl(attachment.url),
-        kind: getAttachmentKind(attachment),
-      }))
-  }
-
-  if (campaign?.image_url) {
-    return [{
-      url: campaign.image_url,
-      filename: getFileNameFromUrl(campaign.image_url),
-      kind: isImageUrl(campaign.image_url) ? 'image' : 'file',
-    }]
-  }
-
-  return []
-}
-
-function normalizeUploadedAttachment(uploadData, file) {
-  const isImage = uploadData.kind === 'image' || (file.type || '').startsWith('image/')
-  return {
-    url: uploadData.url,
-    filename: uploadData.filename || file.name,
-    kind: uploadData.kind || (isImage ? 'image' : 'file'),
-  }
-}
-
-function DropdownMenu({ campaign, onEdit, onDelete, onReset, onTogglePin }) {
-  const [open, setOpen] = useState(false)
-  const [isMenuHovered, setIsMenuHovered] = useState(false)
-  const [isMenuPressed, setIsMenuPressed] = useState(false)
-  const ref = useRef()
-
-  useEffect(() => {
-    function handleClick(e) {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
-    }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [])
-
-  return (
-    <div ref={ref} style={{ position: 'relative' }}>
-      <button
-        onClick={() => setOpen(!open)}
-        style={{
-          background: isMenuHovered ? '#1a1208' : 'transparent',
-          border: `2px solid ${isMenuHovered ? '#FF6B0055' : '#2a1a0a'}`,
-          borderRadius: '6px',
-          color: isMenuHovered ? '#FF6B00' : '#9ca3af',
-          cursor: 'pointer',
-          padding: '4px 10px',
-          fontSize: '16px',
-          lineHeight: '1',
-          fontFamily: "'Space Mono', monospace",
-          transform: isMenuPressed
-            ? 'translateY(1px) scale(0.98)'
-            : isMenuHovered
-              ? 'translateY(-1px) scale(1.02)'
-              : 'translateY(0) scale(1)',
-          boxShadow: isMenuPressed
-            ? 'inset 0 0 0 1px #FF6B0077'
-            : isMenuHovered
-              ? '0 4px 12px #FF6B0022'
-              : '0 0 0 0 #00000000',
-          transition: 'all 0.12s ease',
-        }}
-        onMouseEnter={() => setIsMenuHovered(true)}
-        onMouseDown={() => setIsMenuPressed(true)}
-        onMouseUp={() => setIsMenuPressed(false)}
-        onMouseLeave={() => {
-          setIsMenuHovered(false)
-          setIsMenuPressed(false)
-        }}
-      >
-        ···
-      </button>
-
-      {open && (
-        <div style={{
-          position: 'absolute', right: 0, bottom: '110%',
-          background: '#111827', border: '2px solid #2a1a0a',
-          borderRadius: '8px', overflow: 'hidden', zIndex: 99999,
-          minWidth: '130px', boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
-        }}>
-          <button onClick={() => { onTogglePin(campaign); setOpen(false) }} style={{
-            display: 'block', width: '100%', padding: '10px 16px',
-            background: 'transparent', border: 'none', color: campaign.pinned ? '#fbbf24' : '#e5e7eb',
-            fontSize: '12px', cursor: 'pointer', textAlign: 'left',
-            fontFamily: "'Space Mono', monospace",
-          }}
-            onMouseEnter={e => e.currentTarget.style.background = '#3b2a08'}
-            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-          >{campaign.pinned ? '📌 Desafixar' : '📍 Fixar'}</button>
-          {campaign.status === 'running' && (
-            <button onClick={() => { onReset(campaign.id); setOpen(false) }} style={{
-              display: 'block', width: '100%', padding: '10px 16px',
-              background: 'transparent', border: 'none', color: '#f59e0b',
-              fontSize: '12px', cursor: 'pointer', textAlign: 'left',
-              fontFamily: "'Space Mono', monospace",
-            }}
-              onMouseEnter={e => e.currentTarget.style.background = '#3b2a08'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-            >↻ Destravar</button>
-          )}
-          <button onClick={() => { onEdit(campaign); setOpen(false) }} style={{
-            display: 'block', width: '100%', padding: '10px 16px',
-            background: 'transparent', border: 'none', color: '#e5e7eb',
-            fontSize: '12px', cursor: 'pointer', textAlign: 'left',
-            fontFamily: "'Space Mono', monospace",
-          }}
-            onMouseEnter={e => e.currentTarget.style.background = '#633b0a'}
-            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-          >✏️ Editar</button>
-          <button onClick={() => { onDelete(campaign.id); setOpen(false) }} style={{
-            display: 'block', width: '100%', padding: '10px 16px',
-            background: 'transparent', border: 'none', color: '#f87171',
-            fontSize: '12px', cursor: 'pointer', textAlign: 'left',
-            fontFamily: "'Space Mono', monospace",
-          }}
-            onMouseEnter={e => e.currentTarget.style.background = '#4c1d24'}
-            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-          >🗑️ Excluir</button>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// Modal de loading / sucesso
-function SendingModal({ status }) {
-  return (
-    <div style={{
-      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-      background: 'rgba(0,0,0,0.8)', display: 'flex',
-      alignItems: 'center', justifyContent: 'center', zIndex: 2000
-    }}>
-      <div style={{
-        background: '#111827', border: '2px solid #2a1a0a',
-        borderRadius: '16px', padding: '48px 40px',
-        display: 'flex', flexDirection: 'column',
-        alignItems: 'center', gap: '20px', minWidth: '260px'
-      }}>
-        {status === 'loading' ? (
-          <>
-            <div style={{
-              width: '56px', height: '56px', borderRadius: '50%',
-              border: '4px solid #2a1a0a',
-              borderTop: '4px solid #FF6B00',
-              animation: 'spin 0.8s linear infinite',
-            }} />
-            <div style={{ color: '#e5e7eb', fontSize: '14px', fontFamily: "'Space Mono', monospace", textAlign: 'center' }}>
-              Disparando campanha...
-            </div>
-            <div style={{ color: '#6b7280', fontSize: '11px', fontFamily: "'Space Mono', monospace", textAlign: 'center' }}>
-              Isso pode levar alguns segundos...
-            </div>
-          </>
-        ) : (
-          <>
-            <CheckCircle size={56} color="#10b981" strokeWidth={1.5} />
-            <div style={{ color: '#e5e7eb', fontSize: '14px', fontFamily: "'Space Mono', monospace", textAlign: 'center' }}>
-              Campanha disparada!
-            </div>
-            <div style={{ color: '#6b7280', fontSize: '11px', fontFamily: "'Space Mono', monospace", textAlign: 'center' }}>
-              Mensagens enviadas com sucesso!
-            </div>
-          </>
-        )}
-      </div>
-      <style>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
-    </div>
-  )
 }
 
 export default function Campaigns() {
@@ -754,11 +500,11 @@ export default function Campaigns() {
           </div>
 
           <div style={{ display: 'flex', gap: isNarrowScreen ? '10px' : '24px', marginBottom: '14px', flexWrap: isNarrowScreen ? 'wrap' : 'nowrap' }}>
-            <CheckBox label="Email" icon="email" checked={form.use_email}
+            <ChannelCheckbox label="Email" icon="email" checked={form.use_email}
               onChange={() => setForm({ ...form, use_email: !form.use_email })} />
-            <CheckBox label="SMS" icon="sms" checked={form.use_sms}
+            <ChannelCheckbox label="SMS" icon="sms" checked={form.use_sms}
               onChange={() => setForm({ ...form, use_sms: !form.use_sms })} />
-            <CheckBox label="Telegram" icon="telegram" checked={form.use_telegram}
+            <ChannelCheckbox label="Telegram" icon="telegram" checked={form.use_telegram}
               onChange={() => setForm({ ...form, use_telegram: !form.use_telegram })} />
           </div>
 
@@ -953,7 +699,7 @@ export default function Campaigns() {
               </button>
             </div>
             <div style={{ minWidth: 0, display: 'flex', justifyContent: 'flex-end' }}>
-              <DropdownMenu campaign={c} onEdit={handleEdit} onDelete={handleDelete} onReset={handleResetCampaign} onTogglePin={handleTogglePinCampaign} />
+              <CampaignDropdownMenu campaign={c} onEdit={handleEdit} onDelete={handleDelete} onReset={handleResetCampaign} onTogglePin={handleTogglePinCampaign} />
             </div>
           </div>
         ))}

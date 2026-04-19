@@ -3,75 +3,12 @@
 import { useEffect, useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Plus, User, Users, LogOut, FileText, Fingerprint, Camera } from 'lucide-react'
+import { Plus, User, Users, LogOut, FileText, Camera } from 'lucide-react'
 import { useGoogleLogin } from '@react-oauth/google'
 import logo from '../assets/logo-manshot.png'
 import { activateStoredAccountSession, clearToken, deleteMyAccount, deriveAccountDisplayName, getMe, getStoredAccounts, googleLogin, inferAccountProviderByEmail, rememberAccount, removeStoredAccount, saveToken, setAuthProvider } from '../services/api'
-
-const links = [
-  { path: '/', icon: '⚡', label: 'Dashboard' },
-  { path: '/contacts', icon: '👥', label: 'Contatos' },
-  { path: '/campaigns', icon: '📡', label: 'Campanhas' },
-  { path: '/credentials', icon: Fingerprint, label: 'Credenciais', iconKind: 'component' },
-]
-
-const PROFILE_PREFS_KEY = 'manshot_profile_prefs'
-
-function readProfilePrefs() {
-  if (typeof window === 'undefined') return {}
-
-  try {
-    const raw = localStorage.getItem(PROFILE_PREFS_KEY)
-    const parsed = raw ? JSON.parse(raw) : {}
-    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {}
-  } catch {
-    return {}
-  }
-}
-
-function getProfileForEmail(email) {
-  const normalizedEmail = (email || '').trim().toLowerCase()
-  if (!normalizedEmail) return { displayName: '', avatarDataUrl: '' }
-
-  const profile = readProfilePrefs()[normalizedEmail]
-  return {
-    displayName: (profile?.displayName || '').trim(),
-    avatarDataUrl: (profile?.avatarDataUrl || '').trim(),
-  }
-}
-
-function saveProfileForEmail(email, payload) {
-  const normalizedEmail = (email || '').trim().toLowerCase()
-  if (!normalizedEmail || typeof window === 'undefined') return
-
-  const current = readProfilePrefs()
-  current[normalizedEmail] = {
-    displayName: (payload?.displayName || '').trim(),
-    avatarDataUrl: (payload?.avatarDataUrl || '').trim(),
-  }
-  localStorage.setItem(PROFILE_PREFS_KEY, JSON.stringify(current))
-}
-
-function removeProfileForEmail(email) {
-  const normalizedEmail = (email || '').trim().toLowerCase()
-  if (!normalizedEmail || typeof window === 'undefined') return
-
-  const current = readProfilePrefs()
-  if (!current[normalizedEmail]) return
-
-  delete current[normalizedEmail]
-  localStorage.setItem(PROFILE_PREFS_KEY, JSON.stringify(current))
-}
-
-function computeAvatarInitials(name) {
-  return (name || '')
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((word) => word?.[0])
-    .join('')
-    .toUpperCase() || 'MA'
-}
+import { NAV_LINKS } from './navbar/navLinks'
+import { computeAvatarInitials, getProfileForEmail, removeProfileForEmail, saveProfileForEmail } from './navbar/profilePrefs'
 
 export default function Navbar() {
   const location = useLocation()
@@ -424,7 +361,7 @@ export default function Navbar() {
       </div>
 
       {/* Links */}
-      {links.map(link => {
+      {NAV_LINKS.map(link => {
         const active = location.pathname === link.path
         return (
           <Link
