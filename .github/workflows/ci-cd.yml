@@ -64,26 +64,31 @@ jobs:
     runs-on: ubuntu-latest
     needs: [backend-ci, frontend-ci]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    env:
+      RENDER_DEPLOY_HOOK_BACKEND: ${{ secrets.RENDER_DEPLOY_HOOK_BACKEND }}
+      RENDER_DEPLOY_HOOK_DASHBOARD: ${{ secrets.RENDER_DEPLOY_HOOK_DASHBOARD }}
 
     steps:
-      - name: Trigger backend deploy on Render
-        if: ${{ secrets.RENDER_DEPLOY_HOOK_BACKEND != '' }}
-        run: |
-          curl -fsS -X POST "$RENDER_DEPLOY_HOOK_BACKEND"
-        env:
-          RENDER_DEPLOY_HOOK_BACKEND: ${{ secrets.RENDER_DEPLOY_HOOK_BACKEND }}
-
-      - name: Trigger dashboard deploy on Render
-        if: ${{ secrets.RENDER_DEPLOY_HOOK_DASHBOARD != '' }}
-        run: |
-          curl -fsS -X POST "$RENDER_DEPLOY_HOOK_DASHBOARD"
-        env:
-          RENDER_DEPLOY_HOOK_DASHBOARD: ${{ secrets.RENDER_DEPLOY_HOOK_DASHBOARD }}
-
       - name: Validate deploy hook configuration
         run: |
-          if [ -z "${{ secrets.RENDER_DEPLOY_HOOK_BACKEND }}" ] && [ -z "${{ secrets.RENDER_DEPLOY_HOOK_DASHBOARD }}" ]; then
+          if [ -z "$RENDER_DEPLOY_HOOK_BACKEND" ] && [ -z "$RENDER_DEPLOY_HOOK_DASHBOARD" ]; then
             echo "Nenhum hook de deploy configurado."
             echo "Configure ao menos um secret: RENDER_DEPLOY_HOOK_BACKEND ou RENDER_DEPLOY_HOOK_DASHBOARD"
             exit 1
+          fi
+
+      - name: Trigger backend deploy on Render
+        run: |
+          if [ -n "$RENDER_DEPLOY_HOOK_BACKEND" ]; then
+            curl -fsS -X POST "$RENDER_DEPLOY_HOOK_BACKEND"
+          else
+            echo "Skipping backend deploy hook: secret not configured."
+          fi
+
+      - name: Trigger dashboard deploy on Render
+        run: |
+          if [ -n "$RENDER_DEPLOY_HOOK_DASHBOARD" ]; then
+            curl -fsS -X POST "$RENDER_DEPLOY_HOOK_DASHBOARD"
+          else
+            echo "Skipping dashboard deploy hook: secret not configured."
           fi
