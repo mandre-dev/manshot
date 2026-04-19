@@ -227,9 +227,11 @@ export default function Login() {
       minHeight: '100vh',
       background: '#0a0e1a',
       display: 'flex',
+      flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '20px'
+      padding: '20px',
+      gap: '18px'
     }}>
       <div style={{
         width: '100%',
@@ -498,6 +500,16 @@ export default function Login() {
             {isRegisterMode ? 'Já tenho conta' : 'Criar nova conta'}
           </button>
         </form>
+      </div>
+
+      <div style={{
+        color: '#9ca3af',
+        fontSize: '12px',
+        textAlign: 'center',
+        fontFamily: "'Space Mono', monospace",
+        letterSpacing: '0.3px',
+      }}>
+        Manshot © 2026 · Desenvolvido por Marcos André
       </div>
     </div>
   )

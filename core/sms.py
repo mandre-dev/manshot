@@ -145,6 +145,11 @@ class SMSChannel(BaseChannel):
             if image_url:
                 personalized_message += f"\n\nVer imagem: {image_url}"
 
+            # Alguns planos trial da Vonage adicionam sufixo promocional no fim do SMS.
+            # Garante separacao visual entre a mensagem do usuario e o sufixo do provedor.
+            if personalized_message and not personalized_message[-1].isspace():
+                personalized_message += " "
+
             print(f"[SMS] sender_id='{sender_id}' destino='{sanitized_phone}'")
 
             msg = SmsMessage(
