@@ -1,5 +1,30 @@
+## Python environments and cache
+.venv/
 venv/
-.env
 __pycache__/
 *.pyc
+*.pyo
+
+## Environment files
+.env
+.env.*
+!.env.example
+
+## Local databases and runtime files
+*.db
+*.sqlite
+*.sqlite3
+
+## Frontend dependencies and build output
+dashboard/node_modules/
+dashboard/dist/
+
+## Local uploads (keep folder only)
+uploads/*
+!uploads/.gitkeep
+
+## Accidental local/scratch files
+manshot skills
+ystemctl status manshot-dashboard
+
 .DS_Store
