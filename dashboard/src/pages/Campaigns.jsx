@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { getCampaigns, createCampaign, updateCampaign, deleteCampaign, pinCampaign, resetCampaignStatus, sendCampaign, uploadAttachment, getContacts } from '../services/api'
+import AlertToast from '../components/AlertToast'
 import { Mail, MessageSquare, Send, X, Paperclip, Pin } from 'lucide-react'
 import RichEditor from '../components/RichEditor'
 import StatusPill from '../components/campaigns/StatusPill'
@@ -40,6 +41,7 @@ function formatDuration(seconds) {
 }
 
 export default function Campaigns() {
+  const [alert, setAlert] = useState("")
   const [campaigns, setCampaigns] = useState([])
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(null)
@@ -191,15 +193,15 @@ export default function Campaigns() {
     e.preventDefault()
     // Validação obrigatória
     if (!form.name.trim()) {
-      alert('Preencha o nome da campanha.')
+      setAlert('Preencha o nome da campanha.')
       return
     }
     if (!form.message || !form.message.replace(/<[^>]+>/g, '').trim()) {
-      alert('Preencha a mensagem da campanha.')
+      setAlert('Preencha a mensagem da campanha.')
       return
     }
     if (!form.use_email && !form.use_sms && !form.use_telegram) {
-      alert('Selecione pelo menos um canal de envio: Email, SMS ou Telegram.')
+      setAlert('Selecione pelo menos um canal de envio: Email, SMS ou Telegram.')
       return
     }
     try {
@@ -351,6 +353,7 @@ export default function Campaigns() {
 
   return (
     <div>
+      <AlertToast message={alert} onClose={() => setAlert("")} />
       {/* Modal de loading/sucesso */}
       {sendingModalStatus && <SendingModal status={sendingModalStatus} />}
 
