@@ -1,0 +1,17 @@
+[Unit]
+Description=Manshot Dashboard (Vite Preview)
+After=network.target
+
+[Service]
+Type=simple
+User=mandre
+Group=mandre
+WorkingDirectory=/home/mandre/manshot/dashboard
+ExecStart=/home/mandre/.nvm/versions/node/v24.14.1/bin/node /home/mandre/manshot/dashboard/node_modules/vite/bin/vite.js preview --host 0.0.0.0 --port 4173
+Restart=always
+RestartSec=5
+KillSignal=SIGINT
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

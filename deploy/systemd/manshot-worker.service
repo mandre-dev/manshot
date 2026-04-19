@@ -1,0 +1,19 @@
+[Unit]
+Description=Manshot Worker (Celery)
+After=network.target
+
+[Service]
+Type=simple
+User=mandre
+Group=mandre
+WorkingDirectory=/home/mandre/manshot
+EnvironmentFile=/home/mandre/manshot/.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/home/mandre/manshot/.venv/bin/celery -A api.tasks.celery_app worker --loglevel=info --concurrency=1
+Restart=always
+RestartSec=5
+KillSignal=SIGINT
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target
