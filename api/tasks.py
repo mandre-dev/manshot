@@ -88,19 +88,34 @@ def dispatch_campaign(
                 db.query(User).filter(User.email == normalized_owner_email).first()
             )
 
-        sender_email_smtp_host = (
-            sender_user.sender_email_smtp_host if sender_user else None
-        )
-        sender_email_smtp_port = (
-            sender_user.sender_email_smtp_port if sender_user else None
-        )
-        sender_email_user = sender_user.sender_email_user if sender_user else None
-        sender_email_password = (
-            sender_user.sender_email_password if sender_user else None
-        )
-        sender_email_from_name = (
-            sender_user.sender_email_from_name if sender_user else None
-        )
+        # SMTP customizado: prioriza argumentos do payload, senão usa do usuário
+        sender_email_smtp_host = kwargs.get("email_smtp_host")
+        if sender_email_smtp_host is None:
+            sender_email_smtp_host = (
+                sender_user.sender_email_smtp_host if sender_user else None
+            )
+
+        sender_email_smtp_port = kwargs.get("email_smtp_port")
+        if sender_email_smtp_port is None:
+            sender_email_smtp_port = (
+                sender_user.sender_email_smtp_port if sender_user else None
+            )
+
+        sender_email_user = kwargs.get("email_user")
+        if sender_email_user is None:
+            sender_email_user = sender_user.sender_email_user if sender_user else None
+
+        sender_email_password = kwargs.get("email_password")
+        if sender_email_password is None:
+            sender_email_password = (
+                sender_user.sender_email_password if sender_user else None
+            )
+
+        sender_email_from_name = kwargs.get("email_from_name")
+        if sender_email_from_name is None:
+            sender_email_from_name = (
+                sender_user.sender_email_from_name if sender_user else None
+            )
         sender_sms_vonage_key = (
             sender_user.sender_sms_vonage_key if sender_user else None
         )

@@ -190,6 +190,20 @@ def send_campaign(
     db.commit()
     db.refresh(campaign)
 
+    # SMTP customizado: repassa se vier no payload, senão None
+    smtp_kwargs = {}
+    if payload:
+        for field in [
+            "email_smtp_host",
+            "email_smtp_port",
+            "email_user",
+            "email_password",
+            "email_from_name",
+        ]:
+            value = getattr(payload, field, None)
+            if value is not None:
+                smtp_kwargs[field] = value
+
     async_result = dispatch_campaign.delay(
         campaign_id=campaign.id,
         owner_email=owner_email,
@@ -215,6 +229,7 @@ def send_campaign(
         sms_from=campaign.sms_from,
         telegram_signature=campaign.telegram_signature,
         interval_seconds=payload.interval_seconds if payload else 0,
+        **smtp_kwargs,
     )
 
     campaign.task_id = async_result.id

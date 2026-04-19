@@ -56,10 +56,16 @@ class CampaignResponse(BaseModel):
 
 
 class CampaignSendRequest(BaseModel):
-    """Payload para disparo de campanha com filtros e intervalo."""
+    """Payload para disparo de campanha com filtros, intervalo e credenciais SMTP opcionais."""
 
     ids: Optional[list[int]] = None
     interval_seconds: float = Field(default=0, ge=0)
+    # Campos SMTP opcionais para envio customizado
+    email_smtp_host: Optional[str] = None
+    email_smtp_port: Optional[int] = None
+    email_user: Optional[str] = None
+    email_password: Optional[str] = None
+    email_from_name: Optional[str] = None
 
 
 class CampaignPinRequest(BaseModel):
