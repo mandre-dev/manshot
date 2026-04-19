@@ -47,6 +47,9 @@ export default function Campaigns() {
   const [fieldErrors, setFieldErrors] = useState({})
   const nameRef = useRef()
   const messageRef = useRef()
+  const emailRef = useRef()
+  const smsRef = useRef()
+  const telegramRef = useRef()
   // REMOVIDO: declaração duplicada de alert/setAlert
   const [campaigns, setCampaigns] = useState([])
   const [loading, setLoading] = useState(true)
@@ -536,22 +539,28 @@ export default function Campaigns() {
 
 
           <div style={{ position: 'relative', display: 'flex', gap: isNarrowScreen ? '10px' : '24px', marginBottom: '14px', flexWrap: isNarrowScreen ? 'wrap' : 'nowrap' }}>
-            <ChannelCheckbox label="Email" icon="email" checked={form.use_email}
-              onChange={() => {
-                setForm({ ...form, use_email: !form.use_email })
-                if (fieldErrors.channels && (!form.use_email || form.use_sms || form.use_telegram)) setFieldErrors(f => ({ ...f, channels: undefined }))
-              }} />
-            <ChannelCheckbox label="SMS" icon="sms" checked={form.use_sms}
-              onChange={() => {
-                setForm({ ...form, use_sms: !form.use_sms })
-                if (fieldErrors.channels && (form.use_email || !form.use_sms || form.use_telegram)) setFieldErrors(f => ({ ...f, channels: undefined }))
-              }} />
-            <ChannelCheckbox label="Telegram" icon="telegram" checked={form.use_telegram}
-              onChange={() => {
-                setForm({ ...form, use_telegram: !form.use_telegram })
-                if (fieldErrors.channels && (form.use_email || form.use_sms || !form.use_telegram)) setFieldErrors(f => ({ ...f, channels: undefined }))
-              }} />
-            <FieldTooltip show={!!fieldErrors.channels} message={fieldErrors.channels} anchorRef={{ current: document.querySelector('[aria-label="Email"]') }} />
+            <div ref={emailRef} style={{ display: 'inline-flex', alignItems: 'center' }}>
+              <ChannelCheckbox label="Email" icon="email" checked={form.use_email}
+                onChange={() => {
+                  setForm({ ...form, use_email: !form.use_email })
+                  if (fieldErrors.channels && (!form.use_email || form.use_sms || form.use_telegram)) setFieldErrors(f => ({ ...f, channels: undefined }))
+                }} />
+            </div>
+            <div ref={smsRef} style={{ display: 'inline-flex', alignItems: 'center' }}>
+              <ChannelCheckbox label="SMS" icon="sms" checked={form.use_sms}
+                onChange={() => {
+                  setForm({ ...form, use_sms: !form.use_sms })
+                  if (fieldErrors.channels && (form.use_email || !form.use_sms || form.use_telegram)) setFieldErrors(f => ({ ...f, channels: undefined }))
+                }} />
+            </div>
+            <div ref={telegramRef} style={{ display: 'inline-flex', alignItems: 'center' }}>
+              <ChannelCheckbox label="Telegram" icon="telegram" checked={form.use_telegram}
+                onChange={() => {
+                  setForm({ ...form, use_telegram: !form.use_telegram })
+                  if (fieldErrors.channels && (form.use_email || form.use_sms || !form.use_telegram)) setFieldErrors(f => ({ ...f, channels: undefined }))
+                }} />
+            </div>
+            <FieldTooltip show={!!fieldErrors.channels} message={fieldErrors.channels} anchorRef={emailRef} />
           </div>
 
           <div style={{ display: 'flex', gap: '8px', flexWrap: isNarrowScreen ? 'wrap' : 'nowrap' }}>
