@@ -1,5 +1,11 @@
 venv/
+.venv/
 .env
 __pycache__/
 *.pyc
 .DS_Store
+*.db
+manshot.db
+manshot skills
+uploads/
+ystemctl status manshot-dashboard
