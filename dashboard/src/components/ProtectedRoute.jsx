@@ -10,6 +10,10 @@ export default function ProtectedRoute({ children }) {
     if (!token) return
 
     let mounted = true
+    const timeoutId = setTimeout(() => {
+      clearToken()
+      if (mounted) setStatus('invalid')
+    }, 12000)
 
     getMe()
       .then(() => {
@@ -19,9 +23,13 @@ export default function ProtectedRoute({ children }) {
         clearToken()
         if (mounted) setStatus('invalid')
       })
+      .finally(() => {
+        clearTimeout(timeoutId)
+      })
 
     return () => {
       mounted = false
+      clearTimeout(timeoutId)
     }
   }, [token])
 
