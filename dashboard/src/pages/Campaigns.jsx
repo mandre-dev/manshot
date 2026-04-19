@@ -189,6 +189,19 @@ export default function Campaigns() {
 
   async function handleSubmit(e) {
     e.preventDefault()
+    // Validação obrigatória
+    if (!form.name.trim()) {
+      alert('Preencha o nome da campanha.')
+      return
+    }
+    if (!form.message || !form.message.replace(/<[^>]+>/g, '').trim()) {
+      alert('Preencha a mensagem da campanha.')
+      return
+    }
+    if (!form.use_email && !form.use_sms && !form.use_telegram) {
+      alert('Selecione pelo menos um canal de envio: Email, SMS ou Telegram.')
+      return
+    }
     try {
       if (editingId) {
         await updateCampaign(editingId, form)
