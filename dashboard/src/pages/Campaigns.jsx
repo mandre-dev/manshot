@@ -1,16 +1,16 @@
 // Campaigns.jsx — Manshot Orange Theme + Image Upload + Menu
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { getCampaigns, createCampaign, updateCampaign, deleteCampaign, pinCampaign, resetCampaignStatus, sendCampaign, uploadAttachment, getContacts } from '../services/api'
 import AlertToast from '../components/AlertToast'
-import FieldTooltip from '../components/FieldTooltip'
-import { useRef } from 'react'
 import { Mail, MessageSquare, Send, X, Paperclip, Pin } from 'lucide-react'
 import RichEditor from '../components/RichEditor'
 import StatusPill from '../components/campaigns/StatusPill'
 import ChannelCheckbox from '../components/campaigns/ChannelCheckbox'
 import CampaignDropdownMenu from '../components/campaigns/CampaignDropdownMenu'
 import SendingModal from '../components/campaigns/SendingModal'
+
+import FieldTooltip from '../components/FieldTooltip'
 import { getAttachmentKind, normalizeCampaignAttachments, normalizeUploadedAttachment } from '../components/campaigns/attachmentUtils'
 
 
@@ -44,14 +44,10 @@ function formatDuration(seconds) {
 
 export default function Campaigns() {
   const [alert, setAlert] = useState("")
+  const [campaigns, setCampaigns] = useState([])
   const [fieldErrors, setFieldErrors] = useState({})
-  const nameRef = useRef()
   const messageRef = useRef()
   const emailRef = useRef()
-  const smsRef = useRef()
-  const telegramRef = useRef()
-  // REMOVIDO: declaração duplicada de alert/setAlert
-  const [campaigns, setCampaigns] = useState([])
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(null)
   const [sendingModalStatus, setSendingModalStatus] = useState(null) // null | 'loading' | 'success'
@@ -200,13 +196,21 @@ export default function Campaigns() {
 
   async function handleSubmit(e) {
     e.preventDefault()
+    // Validação obrigatória visual
     const errors = {}
-    if (!form.name.trim()) errors.name = 'Preencha este campo.'
-    if (!form.message || !form.message.replace(/<[^>]+>/g, '').trim()) errors.message = 'Preencha este campo.'
-    if (!form.use_email && !form.use_sms && !form.use_telegram) errors.channels = 'Selecione pelo menos um canal.'
+    if (!form.name.trim()) {
+      setAlert('Preencha o nome da campanha.')
+      return
+    }
+    if (!form.message || !form.message.replace(/<[^>]+>/g, '').trim()) {
+      errors.message = 'Preencha este campo.'
+    } else if (!form.use_email && !form.use_sms && !form.use_telegram) {
+      errors.channels = 'Selecione pelo menos um canal.'
+    }
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) return
     try {
+      setFieldErrors({})
       if (editingId) {
         await updateCampaign(editingId, form)
         setEditingId(null)
@@ -370,27 +374,15 @@ export default function Campaigns() {
           {editingId ? '✏️ Editando campanha' : '+ Nova campanha'}
         </div>
         <form onSubmit={handleSubmit}>
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '14px' }}>
-
-            <div style={{ position: 'relative' }}>
-              <input
-                ref={nameRef}
-                style={getAnimatedInputStyle('name')}
-                placeholder="Nome da campanha *"
-                value={form.name}
-                onMouseEnter={() => setHoveredField('name')}
-                onMouseLeave={() => setHoveredField('')}
-                onFocus={() => setFocusedField('name')}
-                onBlur={() => setFocusedField('')}
-                onChange={e => {
-                  setForm({ ...form, name: e.target.value })
-                  if (fieldErrors.name && e.target.value.trim()) setFieldErrors(f => ({ ...f, name: undefined }))
-                }}
-                required
-              />
-              <FieldTooltip show={!!fieldErrors.name} message={fieldErrors.name} anchorRef={nameRef} />
-            </div>
-
+            <input style={getAnimatedInputStyle('name')} placeholder="Nome da campanha *"
+              value={form.name}
+              onMouseEnter={() => setHoveredField('name')}
+              onMouseLeave={() => setHoveredField('')}
+              onFocus={() => setFocusedField('name')}
+              onBlur={() => setFocusedField('')}
+              onChange={e => setForm({ ...form, name: e.target.value })} required />
 
             <div style={{ position: 'relative' }}>
               <RichEditor
@@ -403,6 +395,46 @@ export default function Campaigns() {
                 placeholder="Mensagem da campanha *"
               />
               <FieldTooltip show={!!fieldErrors.message} message={fieldErrors.message} anchorRef={messageRef} />
+              {/* Alerta visual igual ao dos canais */}
+              {fieldErrors.message && (
+                <div style={{
+                  position: 'absolute',
+                  left: 0,
+                  top: '100%',
+                  marginTop: 12,
+                  background: '#fff',
+                  color: '#222',
+                  border: '2px solid #FF6B00',
+                  borderRadius: 8,
+                  padding: '8px 16px',
+                  fontFamily: "'Space Mono', monospace",
+                  fontSize: 15,
+                  fontWeight: 500,
+                  zIndex: 9999,
+                  boxShadow: '0 8px 32px #FF6B0033',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  minWidth: 180,
+                  maxWidth: 260,
+                  pointerEvents: 'none',
+                  letterSpacing: '0.01em',
+                }}>
+                  <span style={{ color: '#FF6B00', fontSize: 20, marginRight: 8 }}>⚠️</span>
+                  <span>{fieldErrors.message}</span>
+                  <div style={{
+                    position: 'absolute',
+                    top: -10,
+                    left: 24,
+                    width: 0,
+                    height: 0,
+                    borderLeft: '8px solid transparent',
+                    borderRight: '8px solid transparent',
+                    borderBottom: '10px solid #fff',
+                    filter: 'drop-shadow(0 -2px 0 #FF6B00)'
+                  }} />
+                </div>
+              )}
             </div>
 
             {form.use_email && (
@@ -537,29 +569,27 @@ export default function Campaigns() {
             </div>
           </div>
 
-
-          <div style={{ position: 'relative', display: 'flex', gap: isNarrowScreen ? '10px' : '24px', marginBottom: '14px', flexWrap: isNarrowScreen ? 'wrap' : 'nowrap' }}>
+          <div style={{ display: 'flex', gap: isNarrowScreen ? '10px' : '24px', marginBottom: '14px', flexWrap: isNarrowScreen ? 'wrap' : 'nowrap' }}>
             <div ref={emailRef} style={{ display: 'inline-flex', alignItems: 'center' }}>
               <ChannelCheckbox label="Email" icon="email" checked={form.use_email}
                 onChange={() => {
-                  setForm({ ...form, use_email: !form.use_email })
-                  if (fieldErrors.channels && (!form.use_email || form.use_sms || form.use_telegram)) setFieldErrors(f => ({ ...f, channels: undefined }))
+                  const next = !form.use_email;
+                  setForm({ ...form, use_email: next })
+                  if (next || form.use_sms || form.use_telegram) setFieldErrors(f => ({ ...f, channels: undefined }))
                 }} />
             </div>
-            <div ref={smsRef} style={{ display: 'inline-flex', alignItems: 'center' }}>
-              <ChannelCheckbox label="SMS" icon="sms" checked={form.use_sms}
-                onChange={() => {
-                  setForm({ ...form, use_sms: !form.use_sms })
-                  if (fieldErrors.channels && (form.use_email || !form.use_sms || form.use_telegram)) setFieldErrors(f => ({ ...f, channels: undefined }))
-                }} />
-            </div>
-            <div ref={telegramRef} style={{ display: 'inline-flex', alignItems: 'center' }}>
-              <ChannelCheckbox label="Telegram" icon="telegram" checked={form.use_telegram}
-                onChange={() => {
-                  setForm({ ...form, use_telegram: !form.use_telegram })
-                  if (fieldErrors.channels && (form.use_email || form.use_sms || !form.use_telegram)) setFieldErrors(f => ({ ...f, channels: undefined }))
-                }} />
-            </div>
+            <ChannelCheckbox label="SMS" icon="sms" checked={form.use_sms}
+              onChange={() => {
+                const next = !form.use_sms;
+                setForm({ ...form, use_sms: next })
+                if (form.use_email || next || form.use_telegram) setFieldErrors(f => ({ ...f, channels: undefined }))
+              }} />
+            <ChannelCheckbox label="Telegram" icon="telegram" checked={form.use_telegram}
+              onChange={() => {
+                const next = !form.use_telegram;
+                setForm({ ...form, use_telegram: next })
+                if (form.use_email || form.use_sms || next) setFieldErrors(f => ({ ...f, channels: undefined }))
+              }} />
             <FieldTooltip show={!!fieldErrors.channels} message={fieldErrors.channels} anchorRef={emailRef} />
           </div>
 
