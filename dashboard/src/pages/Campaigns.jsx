@@ -47,7 +47,7 @@ export default function Campaigns() {
   const [fieldErrors, setFieldErrors] = useState({})
   const nameRef = useRef()
   const messageRef = useRef()
-  const [alert, setAlert] = useState("")
+  // REMOVIDO: declaração duplicada de alert/setAlert
   const [campaigns, setCampaigns] = useState([])
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(null)
